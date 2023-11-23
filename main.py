@@ -1,11 +1,11 @@
 """
-File: sys_info.py
+File: main.py
 Author: Chuncheng Zhang
 Date: 2023-11-23
 Copyright & Email: chuncheng.zhang@ia.ac.cn
 
 Purpose:
-    Test and list required modules and assets.
+    Amazing things
 
 Functions:
     1. Requirements and constants
@@ -18,17 +18,8 @@ Functions:
 
 # %% ---- 2023-11-23 ------------------------
 # Requirements and constants
-import mne
-import rich
-import tqdm
-import numpy
-import pandas
-import loguru
-import pathlib
-
-from types import ModuleType
-
-from rich import print, inspect
+from util import LOGGER
+from util.phase_1st_load_raw import LoadRaw
 
 
 # %% ---- 2023-11-23 ------------------------
@@ -38,10 +29,13 @@ from rich import print, inspect
 # %% ---- 2023-11-23 ------------------------
 # Play ground
 if __name__ == '__main__':
-    modules = [eval(e) for e in dir()]
-    modules = [e for e in modules if isinstance(e, ModuleType)]
-    for m in modules:
-        print(m)
+    LOGGER.debug('Started')
+    lr = LoadRaw('D:\\suyuan\\data\\data-1.cnt')
+    lr.load_raw()
+    lr.fix_montage()
+    print(lr.raw.info)
+    print(lr.montage.ch_names)
+    LOGGER.debug('Closed')
 
 
 # %% ---- 2023-11-23 ------------------------

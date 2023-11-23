@@ -1,11 +1,11 @@
 """
-File: sys_info.py
+File: error_box.py
 Author: Chuncheng Zhang
 Date: 2023-11-23
 Copyright & Email: chuncheng.zhang@ia.ac.cn
 
 Purpose:
-    Test and list required modules and assets.
+    Amazing things
 
 Functions:
     1. Requirements and constants
@@ -18,30 +18,30 @@ Functions:
 
 # %% ---- 2023-11-23 ------------------------
 # Requirements and constants
-import mne
-import rich
-import tqdm
-import numpy
-import pandas
-import loguru
-import pathlib
-
-from types import ModuleType
-
-from rich import print, inspect
+import time
+import traceback
+from . import LOGGER, CONF, singleton
 
 
 # %% ---- 2023-11-23 ------------------------
 # Function and class
+@singleton
+class ErrorBox(object):
+    buffer = []
 
+    def __init__(self):
+        pass
+
+    def on_error(self, err):
+        t = time.time()
+        detail = traceback.format_exc()
+        self.buffer.append(dict(t=t, err=err, detail=detail))
+
+
+eb = ErrorBox()
 
 # %% ---- 2023-11-23 ------------------------
 # Play ground
-if __name__ == '__main__':
-    modules = [eval(e) for e in dir()]
-    modules = [e for e in modules if isinstance(e, ModuleType)]
-    for m in modules:
-        print(m)
 
 
 # %% ---- 2023-11-23 ------------------------
