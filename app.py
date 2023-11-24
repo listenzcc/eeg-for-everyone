@@ -12,7 +12,7 @@ templates = Jinja2Templates(directory="web/template")
 
 @app.get("/")
 async def index(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get('/page1')
