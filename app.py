@@ -18,3 +18,8 @@ async def index(request: Request):
 @app.get('/page1')
 async def index(request: Request):
     return templates.TemplateResponse("page1.html", {"request": request})
+
+
+@app.get('/check')
+async def index(request: Request):
+    return templates.TemplateResponse("check.html", {"request": request})
