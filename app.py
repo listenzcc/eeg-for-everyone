@@ -5,16 +5,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware)
-app.mount("/static", StaticFiles(directory="src"), name="static")
+app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
-templates = Jinja2Templates(directory="src")
+templates = Jinja2Templates(directory="web/template")
 
 
 @app.get("/")
 async def index(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
-
-
-@app.get('/dist/output.css')
-async def foo(request: Request):
-    return templates.TemplateResponse("dist/output.css", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request})
