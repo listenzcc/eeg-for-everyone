@@ -6,6 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 app = FastAPI()
 app.add_middleware(GZipMiddleware)
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
+app.mount("/src", StaticFiles(directory="web/src"), name="src")
 
 templates = Jinja2Templates(directory="web/template")
 
