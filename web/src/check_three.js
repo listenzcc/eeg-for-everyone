@@ -64,16 +64,14 @@ float dist(vec3 p) {
 }
 `;
 
-    init();
-    animate();
 
-    function getContainerSize() {
+    const getContainerSize = () => {
         const w = container.clientWidth,
             h = container.clientHeight; //w * 3 / 4;
         return { w, h }
     }
 
-    function init() {
+    let init = () => {
         const { w, h } = getContainerSize();
         // const w = window.innerWidth;
         // const h = window.innerHeight;
@@ -107,8 +105,6 @@ float dist(vec3 p) {
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        window.addEventListener("resize", onWindowResize);
-        onWindowResize();
 
         //
 
@@ -138,7 +134,7 @@ float dist(vec3 p) {
     }
 
 
-    function compile() {
+    const compile = () => {
         const generator = new SDFGeometryGenerator(renderer);
         const geometry = generator.generate(
             Math.pow(2, settings.res + 2),
@@ -167,7 +163,7 @@ float dist(vec3 p) {
         settings.vertexCount = geometry.attributes.position.count;
     }
 
-    function setMaterial() {
+    const setMaterial = () => {
         meshFromSDF.material.dispose();
 
         if (settings.material == "depth") {
@@ -179,7 +175,7 @@ float dist(vec3 p) {
         meshFromSDF.material.wireframe = settings.wireframe;
     }
 
-    function onWindowResize() {
+    const onWindowResize = () => {
         // const w = window.innerWidth;
         // const h = window.innerHeight;
         // const w = container.clientWidth,
@@ -196,11 +192,11 @@ float dist(vec3 p) {
         camera.updateProjectionMatrix();
     }
 
-    function render() {
+    const render = () => {
         renderer.render(scene, camera);
     }
 
-    function animate() {
+    const animate = () => {
         requestAnimationFrame(animate);
 
         controls.update();
@@ -213,6 +209,12 @@ float dist(vec3 p) {
 
         stats.update();
     }
+
+    init();
+    animate();
+
+    window.addEventListener("resize", onWindowResize);
+    onWindowResize();
 }
 
 console.log("<<<<<<<< check_three.js finishes.");
