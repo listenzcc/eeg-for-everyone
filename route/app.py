@@ -30,6 +30,7 @@ app = FastAPI()
 app.add_middleware(GZipMiddleware)
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 app.mount("/src", StaticFiles(directory="web/src"), name="src")
+app.mount("/fsaverage", StaticFiles(directory="asset/fsaverage"), name="fsaverage")
 
 # %% ---- 2023-11-27 ------------------------
 # Play ground

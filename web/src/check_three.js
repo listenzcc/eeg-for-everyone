@@ -7,11 +7,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls";
 import { SDFGeometryGenerator } from 'three/addons/geometries/SDFGeometryGenerator.js';
 
 {
-    console.log(THREE, THREE.Scene);
-    console.log(OrbitControls);
-    console.log(GUI);
-    console.log(Stats);
-
     let renderer, stats, meshFromSDF, scene, camera, clock, controls;
 
     const settings = {
@@ -194,10 +189,6 @@ float dist(vec3 p) {
     }
 
     const onWindowResize = () => {
-        // const w = window.innerWidth;
-        // const h = window.innerHeight;
-        // const w = container.clientWidth,
-        //     h = container.clientHeight;
         const { w, h } = getContainerSize();
 
         renderer.setSize(w, h);
