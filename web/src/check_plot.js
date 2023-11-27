@@ -2,6 +2,7 @@ console.log("check_plot.js starts. >>>>>>>>");
 
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
 import * as simplexNoise from 'https://cdn.jsdelivr.net/npm/simplex-noise@4.0.1/+esm'
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm'
 
 {
     console.log(Plot)
@@ -10,9 +11,7 @@ import * as simplexNoise from 'https://cdn.jsdelivr.net/npm/simplex-noise@4.0.1/
         n = 500,
         scaleX = d3.scaleLinear().domain([-1, 1]).range([-100, 100]),
         scaleY = d3.scaleLinear().domain([-1, 1]).range([-100, 100]),
-        rnd = d3.randomUniform(),
         { createNoise3D, createNoise2D } = simplexNoise,
-        noise2D = createNoise2D(),
         noise3D = createNoise3D(),
         data = [];
 

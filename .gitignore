@@ -3,6 +3,7 @@ log
 tmp
 filesystem
 node_modules
+asset/fsaverage
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
