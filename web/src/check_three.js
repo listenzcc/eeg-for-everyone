@@ -17,6 +17,8 @@ import { SDFGeometryGenerator } from 'three/addons/geometries/SDFGeometryGenerat
     const settings = {
         res: 4,
         bounds: 1,
+        kTheta: 1,
+        kPhi: 2,
         autoRotate: true,
         wireframe: true,
         material: "normal", // "normal", "depth"
@@ -28,15 +30,25 @@ import { SDFGeometryGenerator } from 'three/addons/geometries/SDFGeometryGenerat
 
     // Example SDF from https://www.shadertoy.com/view/MdXSWn -->
 
-    const shader = /* glsl */ `
+    const shader = () => {
+        const { kTheta, kPhi } = settings;
+        console.log(settings)
+
+        return /* glsl */ `
 float dist(vec3 p) {
 	p.xyz = p.xzy;
 	p *= 1.2;
 	vec3 z = p;
+    // Circle example
+    // return length(p) - 0.5;
+
 	vec3 dz=vec3(0.0);
 	float power = 8.0;
 	float r, theta, phi;
 	float dr = 1.0;
+
+    float a=${kTheta.toFixed(2)}; //1.0; //0.3;
+    float b=${kPhi.toFixed(2)}; //1.0; //0.7;
 	
 	float t0 = 1.0;
 	for(int i = 0; i < 7; ++i) {
@@ -54,6 +66,9 @@ float dist(vec3 p) {
 		r = pow(r, power);
 		theta = theta * power;
 		phi = phi * power;
+
+        theta *= a;
+        phi *= b;
 		
 		z = r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi)) + p;
 		
@@ -63,17 +78,16 @@ float dist(vec3 p) {
 	return 0.5 * log(r) * r / dr;
 }
 `;
+    }
 
-    init();
-    animate();
 
-    function getContainerSize() {
+    const getContainerSize = () => {
         const w = container.clientWidth,
             h = container.clientHeight; //w * 3 / 4;
         return { w, h }
     }
 
-    function init() {
+    let init = () => {
         const { w, h } = getContainerSize();
         // const w = window.innerWidth;
         // const h = window.innerHeight;
@@ -107,8 +121,6 @@ float dist(vec3 p) {
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        window.addEventListener("resize", onWindowResize);
-        onWindowResize();
 
         //
 
@@ -119,6 +131,8 @@ float dist(vec3 p) {
             .add(settings, "bounds", 1, 5, 1)
             .name("Bounds")
             .onFinishChange(compile);
+        panel.add(settings, 'kTheta', 0.1, 2, 0.01).name("KTheta").onFinishChange(compile);
+        panel.add(settings, 'kPhi', 0.1, 2, 0.01).name("KPhi").onFinishChange(compile);
         panel
             .add(settings, "material", ["depth", "normal"])
             .name("Material")
@@ -138,11 +152,11 @@ float dist(vec3 p) {
     }
 
 
-    function compile() {
+    const compile = () => {
         const generator = new SDFGeometryGenerator(renderer);
         const geometry = generator.generate(
             Math.pow(2, settings.res + 2),
-            shader,
+            shader(),
             settings.bounds
         );
         geometry.computeVertexNormals();
@@ -167,7 +181,7 @@ float dist(vec3 p) {
         settings.vertexCount = geometry.attributes.position.count;
     }
 
-    function setMaterial() {
+    const setMaterial = () => {
         meshFromSDF.material.dispose();
 
         if (settings.material == "depth") {
@@ -179,7 +193,7 @@ float dist(vec3 p) {
         meshFromSDF.material.wireframe = settings.wireframe;
     }
 
-    function onWindowResize() {
+    const onWindowResize = () => {
         // const w = window.innerWidth;
         // const h = window.innerHeight;
         // const w = container.clientWidth,
@@ -196,11 +210,11 @@ float dist(vec3 p) {
         camera.updateProjectionMatrix();
     }
 
-    function render() {
+    const render = () => {
         renderer.render(scene, camera);
     }
 
-    function animate() {
+    const animate = () => {
         requestAnimationFrame(animate);
 
         controls.update();
@@ -213,6 +227,12 @@ float dist(vec3 p) {
 
         stats.update();
     }
+
+    init();
+    animate();
+
+    window.addEventListener("resize", onWindowResize);
+    onWindowResize();
 }
 
 console.log("<<<<<<<< check_three.js finishes.");
