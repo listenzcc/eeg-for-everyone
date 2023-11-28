@@ -4,6 +4,7 @@ tmp
 filesystem
 node_modules
 asset/fsaverage
+asset/montage
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
