@@ -18,7 +18,8 @@ Functions:
 
 # %% ---- 2023-11-23 ------------------------
 # Requirements and constants
-import os
+import pandas as pd
+
 from rich import print, inspect
 from util import LOGGER
 from util.phase_1st_load_raw import LoadRaw
@@ -32,9 +33,9 @@ from util.phase_1st_load_raw import LoadRaw
 # Play ground
 if __name__ == '__main__':
     LOGGER.debug('Started')
-    # lr = LoadRaw('D:\\suyuan\\data\\data-1.cnt')
     lr = LoadRaw(
-        os.environ['HOME'] + '\\Desktop\\MI\\S1\\liuyanbing-S1-20230523-Session1-6block-QLU')
+        'D:\\脑机接口专项\\MI\\S1\\liuyanbing-S1-20230523-Session1-6block-QLU')
+    lr = LoadRaw('D:\脑机接口专项\SSVEP数据\丁冬梅\ssvep')
     lr.load_raw()
     lr.fix_montage()
     lr.get_events()
@@ -44,10 +45,17 @@ if __name__ == '__main__':
 
 # %% ---- 2023-11-23 ------------------------
 # Pending
+buffer = []
 for name, dig in zip(lr.montage.ch_names, lr.montage.dig):
-    print([name] + list(dig.values()))
-    # for k in dig.values():
-    #     print(k)
+    rec = [name]
+    values = list(dig.values())
+    print([name] + values)
+    rec = [name]
+    rec.extend(values[0])
+    buffer.append(rec)
+df = pd.DataFrame(buffer, columns=['name', 'x', 'y', 'z'])
+df.to_csv('asset/montage/pos.csv')
+print(df)
 
 # %% ---- 2023-11-23 ------------------------
 # Pending
