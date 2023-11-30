@@ -20,7 +20,7 @@ Functions:
 # Requirements and constants
 from rich import print, inspect
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
@@ -72,7 +72,7 @@ Examples:
 
 
 @app.post("/token")
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request, response: Response):
     user_dict = fake_users_db.get(form_data.username)
     if not user_dict:
         raise HTTPException(
@@ -82,6 +82,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     if hashed_password != user.hashed_password:
         raise HTTPException(
             status_code=400, detail="Incorrect username or password")
+
+    response.set_cookie(key='access_token', value=user.username)
+    response.set_cookie(key='token_type', value='bearer')
 
     return {"access_token": user.username, "token_type": "bearer"}
 
