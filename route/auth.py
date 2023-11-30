@@ -32,14 +32,14 @@ fake_users_db = {
         "full_name": "Chuncheng Zhang",
         "email": "chuncheng.zhang@ia.ac.cn",
         "hashed_password": "fakehashedsecret",
-        "disabled": True,
+        "disabled": False,
     },
     "noone": {
         "username": "noone",
         "full_name": "No one can save me",
         "email": "nobody@nowhere.com",
         "hashed_password": "fakehashedsecret2",
-        "disabled": True,
+        "disabled": False,
     },
 }
 
@@ -75,19 +75,21 @@ def fake_decode_token(token):
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    print(token)
     if user := fake_decode_token(token):
         return user
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearera"},
         )
 
 
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
+    print(current_user)
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
