@@ -5,7 +5,7 @@ Date: 2023-11-27
 Copyright & Email: chuncheng.zhang@ia.ac.cn
 
 Purpose:
-    Amazing things
+    Provide fastapi app for the project
 
 Functions:
     1. Requirements and constants
@@ -28,6 +28,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from .tools import unique_md5
+from .auth import *
 
 
 # %% ---- 2023-11-27 ------------------------
@@ -40,23 +41,78 @@ app.mount("/src", StaticFiles(directory="web/src"), name="src")
 app.mount("/asset", StaticFiles(directory="asset"), name="asset")
 
 # %%
+templates = Jinja2Templates(directory="web/template")
+
+# %%
 
 
 @app.middleware("http")
-async def some_middleware(request: Request, call_next):
+async def session_middleware(request: Request, call_next):
+    """
+Middleware function that intercepts HTTP requests and performs some operations before and after the request is processed.
+
+Args:
+    request (Request): The incoming HTTP request.
+    call_next (Callable): The next middleware or route handler to call.
+
+Returns:
+    Response: The HTTP response.
+
+Examples:
+    # Assuming request is a valid Request object and call_next is a valid callable
+    >>> session_middleware(request, call_next)
+    <Response object>
+"""
+
     response = await call_next(request)
     if session := request.cookies.get('session'):
         response.set_cookie(
             key='session', value=request.cookies.get('session'), httponly=True)
     return response
 
+
+@app.post("/token")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    user_dict = fake_users_db.get(form_data.username)
+    if not user_dict:
+        raise HTTPException(
+            status_code=400, detail="Incorrect username or password")
+    user = UserInDB(**user_dict)
+    hashed_password = fake_hash_password(form_data.password)
+    if hashed_password != user.hashed_password:
+        raise HTTPException(
+            status_code=400, detail="Incorrect username or password")
+
+    return {"access_token": user.username, "token_type": "bearer"}
+
+
+@app.get("/users/me")
+async def read_users_me(
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return current_user
+
 # %% ---- 2023-11-27 ------------------------
-# Play ground
-templates = Jinja2Templates(directory="web/template")
+# Basic route
 
 
 @app.get("/")
 async def index(request: Request):
+    """
+Handles the HTTP GET request to the root URL ("/") and returns the index.html template.
+
+Args:
+    request (Request): The incoming HTTP request.
+
+Returns:
+    TemplateResponse: The rendered index.html template.
+
+Examples:
+    # Assuming request is a valid Request object
+    >>> index(request)
+    <TemplateResponse object>
+"""
+
     request.session['no-matter-what'] = 'a'  # unique_md5()
     request.cookies['sayHi'] = 'Hello from chuncheng.zhang@ia.ac.cn'
     print(request.cookies)
@@ -65,6 +121,22 @@ async def index(request: Request):
 
 @app.get('/template/{template_name}')
 async def index(template_name: str, request: Request):
+    """
+Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
+
+Args:
+    template_name (str): The name of the template to render.
+    request (Request): The incoming HTTP request.
+
+Returns:
+    TemplateResponse: The rendered template.
+
+Examples:
+    # Assuming template_name is a valid template name and request is a valid Request object
+    >>> index(template_name, request)
+    <TemplateResponse object>
+"""
+
     print(request.cookies)
     if not template_name.endswith('.html'):
         template_name += '.html'
