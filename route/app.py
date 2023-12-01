@@ -21,6 +21,8 @@ Functions:
 from rich import print, inspect
 
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import RedirectResponse
+
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
@@ -42,6 +44,19 @@ app.mount("/asset", StaticFiles(directory="asset"), name="asset")
 
 # %%
 templates = Jinja2Templates(directory="web/template")
+
+# %%
+
+
+def cookies2username(cookies):
+    if token := cookies.get('access_token', None):
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except Exception:
+            return
+        if username := payload.get('sub'):
+            return username
+    return
 
 # %%
 
@@ -72,9 +87,8 @@ Examples:
 
 
 @app.post("/token", response_model=Token)
-async def login_for_access_token(
+async def require_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    request: Request,
     response: Response
 ):
     user = authenticate_user(
@@ -91,9 +105,39 @@ async def login_for_access_token(
     )
     response.set_cookie(key='access_token', value=access_token)
     response.set_cookie(key='token_type', value='bearer')
-    response.headers['access_token'] = access_token
-    response.headers['token_type'] = 'bearer'
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/login", response_class=RedirectResponse)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
+    response: Response
+):
+    username = cookies2username(request.cookies)
+    print(f'Username: {username}')
+
+    response = RedirectResponse(
+        url="/template/index.html", status_code=status.HTTP_303_SEE_OTHER)
+
+    if not username:
+        user = authenticate_user(
+            fake_users_db, form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        response.set_cookie(key='access_token', value=access_token)
+        response.set_cookie(key='token_type', value='bearer')
+
+    # templates.TemplateResponse("index.html", {"request": request})
+    return response
 
 
 @app.get("/users/me/", response_model=User)
@@ -115,7 +159,10 @@ async def read_own_items(
 
 
 @app.get("/")
-async def index(request: Request):
+async def index(
+    request: Request,
+    # token: Annotated[str, Depends(oauth2_scheme)]
+):
     """
 Handles the HTTP GET request to the root URL ("/") and returns the index.html template.
 
@@ -134,6 +181,14 @@ Examples:
     request.session['no-matter-what'] = 'a'  # unique_md5()
     request.cookies['sayHi'] = 'Hello from chuncheng.zhang@ia.ac.cn'
     print(request.cookies)
+
+    username = cookies2username(request.cookies)
+    print(f'Username: {username}')
+    if not username:
+        return templates.TemplateResponse('login.html', {'request': request})
+
+    # print(token)
+
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -158,7 +213,13 @@ Examples:
     print(request.cookies)
     if not template_name.endswith('.html'):
         template_name += '.html'
-    return templates.TemplateResponse(template_name, {"request": request})
+
+    username = cookies2username(request.cookies)
+    print(f'Username: {username}')
+    if not username:
+        return templates.TemplateResponse('login.html', {'request': request})
+
+    return templates.TemplateResponse(template_name, dict(request=request, username=username))
 
 # %% ---- 2023-11-27 ------------------------
 # Pending
