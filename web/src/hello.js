@@ -1,15 +1,34 @@
 console.log("Hello cc.");
 
 let whoAmI = () => {
-    let token = (await cookieStore.get('access_token')).value;
+    // let token = (await cookieStore.get('access_token')).value;
+
+    let cookies = {}, token;
+
+    document.cookie.split('; ').map(d => {
+        let s = d.split('=')
+        cookies[s[0]] = s[1]
+    })
+
+    console.log(cookies)
+
+    token = cookies.access_token || ''
 
     $.ajax({
         url: "users/me",
         type: 'get',
         contentType: 'application/json',
         headers: {
-            "Authorization": "Bearer " + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjaHVuY2hlbmciLCJleHAiOjE3MDEzOTkxODN9.9tkko7b1yBLjZo8P9I-kDZT951u8VeZtTYm_7f1ZPl0'
+            "Authorization": "Bearer " + token
         }
+    }).done((msg) => {
+        // Got msg
+        console.log(msg)
+    }).always(() => {
+        // Default behavior
+    }).fail((err) => {
+        // Something is wrong
+        console.error(err)
     })
 
 }

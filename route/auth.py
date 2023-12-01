@@ -15,6 +15,7 @@ Functions:
     4. Pending
     5. Pending
 """
+import subprocess
 
 
 from datetime import datetime, timedelta, timezone
@@ -27,28 +28,6 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 # %%
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "f67dd244499e46a3a3aca6eae90f5a6f95a3925d0a0f5f2d4556cf109d16b6b1"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-fake_users_db = {
-    "chuncheng": {
-        "username": "chuncheng",
-        "full_name": "Chuncheng Zhang",
-        "email": "chuncheng.zhang@ia.ac.cn",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-    },
-    "noone": {
-        "username": "noone",
-        "full_name": "No one can save me",
-        "email": "nobody@nowhere.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": False,
-    },
-}
 
 
 class Token(BaseModel):
@@ -138,6 +117,32 @@ async def get_current_active_user(
 
 # %% ---- 2023-11-30 ------------------------
 # Play ground
+
+# ? I do not quite sure if it crushes when the variables are set below
+# to get a string like this run:
+# openssl rand -hex 32
+# "f67dd244499e46a3a3aca6eae90f5a6f95a3925d0a0f5f2d4556cf109d16b6b1"
+SECRET_KEY = subprocess.check_output(['openssl', 'rand', '-hex', '32'])
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+fake_users_db = {
+    "chuncheng": {
+        "username": "chuncheng",
+        "full_name": "Chuncheng Zhang",
+        "email": "chuncheng.zhang@ia.ac.cn",
+        # "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "hashed_password": get_password_hash('secret'),
+        "disabled": False,
+    },
+    "noone": {
+        "username": "noone",
+        "full_name": "No one can save me",
+        "email": "nobody@nowhere.com",
+        "hashed_password": get_password_hash('secret'),
+        "disabled": False,
+    },
+}
 
 
 # %% ---- 2023-11-30 ------------------------
