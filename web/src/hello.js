@@ -1,4 +1,4 @@
-console.log("Hello cc.");
+console.log("Hello from chuncheng.zhang@ia.ac.cn");
 
 let whoAmI = () => {
     // let token = (await cookieStore.get('access_token')).value;

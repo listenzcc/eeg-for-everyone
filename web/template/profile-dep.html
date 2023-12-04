@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body class="min-w-[10in] hover:h-full bg-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+        <h1 class="font-display text-4xl font-medium tracking-tighter text-blue-600 ">Profile page</h1>
+        <p>Who am I: {{username}}</p>
+
+        <div class="mt-14 grid grid-cols-1 items-start gap-x-8 gap-y-8 sm:mt-16 sm:gap-y-16 md:mt-24 md:grid-cols-4">
+            <div class="relative -mx-4 flex overflow-x-auto pb-4 sm:mx-0 sm:block sm:overflow-visible sm:pb-0">
+                <div class="absolute bottom-0 left-0.5 top-2 hidden w-px bg-slate-200 md:block"></div>
+                <div class="grid auto-cols-auto grid-flow-col justify-start gap-x-8 gap-y-10 whitespace-nowrap px-4 sm:mx-auto sm:max-w-2xl sm:grid-cols-3 sm:px-0 sm:text-center md:grid-flow-row md:grid-cols-1 md:text-left"
+                    role="tablist" aria-orientation="vertical">
+                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
+                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-transparent stroke-slate-400">
+                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                        </svg>
+                        <div class="relative">
+                            <div class="font-mono text-sm text-slate-500"><button
+                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6cqlaqlla:"
+                                    role="tab" type="button" aria-selected="false" tabindex="-1"
+                                    data-headlessui-state="" aria-controls="headlessui-tabs-panel-:R3alaqlla:"><span
+                                        class="absolute inset-0"></span>Opening Day</button></div><time
+                                datetime="2022-04-04"
+                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 4</time>
+                        </div>
+                    </div>
+                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
+                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-transparent stroke-slate-400">
+                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                        </svg>
+                        <div class="relative">
+                            <div class="font-mono text-sm text-slate-500"><button
+                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6kqlaqlla:"
+                                    role="tab" type="button" aria-selected="false" tabindex="-1"
+                                    data-headlessui-state="" aria-controls="headlessui-tabs-panel-:R5alaqlla:"><span
+                                        class="absolute inset-0"></span>Speakers &amp; Workshops</button></div><time
+                                datetime="2022-04-05"
+                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 5</time>
+                        </div>
+                    </div>
+                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
+                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-blue-600 stroke-blue-600">
+                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                        </svg>
+                        <div class="relative">
+                            <div class="font-mono text-sm text-blue-600"><button
+                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6sqlaqlla:"
+                                    role="tab" type="button" aria-selected="true" tabindex="0"
+                                    data-headlessui-state="selected"
+                                    aria-controls="headlessui-tabs-panel-:R7alaqlla:"><span
+                                        class="absolute inset-0"></span>Interviews</button></div><time
+                                datetime="2022-04-06"
+                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 6</time>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

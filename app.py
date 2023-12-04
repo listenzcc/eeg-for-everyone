@@ -20,11 +20,24 @@ Functions:
 # Requirements and constants
 import os
 import pandas as pd
-from route.app import app
 
+from fastapi import Request
+from fastapi.responses import StreamingResponse
+
+from util import LOGGER
+from util.experiments import Experiments
+from route.app import app, check_user_name
 
 # %% ---- 2023-11-28 ------------------------
 # Function and class
+experiments = Experiments()
+
+
+@app.get("/experiments.csv")
+async def get_experiments_csv(request: Request, response_class=StreamingResponse):
+    username = check_user_name(request)
+    LOGGER.debug(f"Checked username: {username}")
+    return StreamingResponse(iter(experiments.to_csv()), media_type="text/csv")
 
 
 # %% ---- 2023-11-28 ------------------------

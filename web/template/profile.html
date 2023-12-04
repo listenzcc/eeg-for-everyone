@@ -1,69 +1,541 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-100">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="/src/hello.js"></script>
 </head>
 
-<body class="min-w-[10in] hover:h-full bg-white">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-        <h1 class="font-display text-4xl font-medium tracking-tighter text-blue-600 ">Profile page</h1>
-        <p>Who am I: {{username}}</p>
+<body class="h-full">
+    <script>
+        whoAmI()
+    </script>
 
-        <div class="mt-14 grid grid-cols-1 items-start gap-x-8 gap-y-8 sm:mt-16 sm:gap-y-16 md:mt-24 md:grid-cols-4">
-            <div class="relative -mx-4 flex overflow-x-auto pb-4 sm:mx-0 sm:block sm:overflow-visible sm:pb-0">
-                <div class="absolute bottom-0 left-0.5 top-2 hidden w-px bg-slate-200 md:block"></div>
-                <div class="grid auto-cols-auto grid-flow-col justify-start gap-x-8 gap-y-10 whitespace-nowrap px-4 sm:mx-auto sm:max-w-2xl sm:grid-cols-3 sm:px-0 sm:text-center md:grid-flow-row md:grid-cols-1 md:text-left"
-                    role="tablist" aria-orientation="vertical">
-                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
-                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-transparent stroke-slate-400">
-                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="relative">
-                            <div class="font-mono text-sm text-slate-500"><button
-                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6cqlaqlla:"
-                                    role="tab" type="button" aria-selected="false" tabindex="-1"
-                                    data-headlessui-state="" aria-controls="headlessui-tabs-panel-:R3alaqlla:"><span
-                                        class="absolute inset-0"></span>Opening Day</button></div><time
-                                datetime="2022-04-04"
-                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 4</time>
+    <div class="min-h-full min-w-[6in]">
+
+        <!-- Navigation -->
+        <section>
+            <nav class="bg-gray-800">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div class="flex h-16 items-center justify-between">
+                        <!-- Left panel -->
+                        <div class="flex items-center">
+                            <!-- Left icon -->
+                            <div class="flex-shrink-0">
+                                <img class="h-8 w-8"
+                                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
+                                    alt="Your Company">
+                            </div>
+
+                            <!-- Middle entries -->
+                            <div class="visible md:block">
+                                <div class="ml-10 flex items-baseline space-x-4">
+                                    <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
+                                    <a href="#" class="bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"
+                                        aria-current="page">Profile</a>
+                                    <a href="#"
+                                        class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Raw</a>
+                                    <a href="#"
+                                        class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Epochs</a>
+                                    <a href="#"
+                                        class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Evoked</a>
+                                    <a href="#"
+                                        class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Others-1</a>
+                                    <a href="#"
+                                        class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Others-2</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right panel -->
+                        <div class="visible md:block">
+                            <div class="ml-4 flex items-center md:ml-6">
+                                <!-- Left icon -->
+                                <button type="button" data-ripple-light="true"
+                                    class="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                                    <span class="absolute -inset-1.5"></span>
+                                    <span class="sr-only">View notifications</span>
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                        stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                    </svg>
+                                </button>
+
+                                <!-- Right icon -->
+                                <div class="relative ml-3">
+                                    <div>
+                                        <button type="button"
+                                            class="relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                                            id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                                            <span class="absolute -inset-1.5"></span>
+                                            <span class="sr-only">Open user menu</span>
+                                            <img class="h-8 w-8 rounded-full"
+                                                src="https://source.unsplash.com/random/256x256" alt="">
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
-                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-transparent stroke-slate-400">
-                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="relative">
-                            <div class="font-mono text-sm text-slate-500"><button
-                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6kqlaqlla:"
-                                    role="tab" type="button" aria-selected="false" tabindex="-1"
-                                    data-headlessui-state="" aria-controls="headlessui-tabs-panel-:R5alaqlla:"><span
-                                        class="absolute inset-0"></span>Speakers &amp; Workshops</button></div><time
-                                datetime="2022-04-05"
-                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 5</time>
+                </div>
+            </nav>
+        </section>
+
+        <!-- Content -->
+        <section class="py-20 sm:py-32">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl lg:mx-0">
+                    <h2 id="speakers-title"
+                        class="font-display text-4xl font-medium tracking-tighter text-blue-600 sm:text-5xl">
+                        <p>Who am I: {{username}}</p>
+                    </h2>
+                    <p class="mt-4 font-display text-2xl tracking-tight text-blue-900">Learn from the experts on the
+                        cutting-edge of deception at the most NB EEG BCIs.</p>
+                </div>
+                <div
+                    class="mt-14 grid grid-cols-1 items-start gap-x-8 gap-y-8 sm:mt-16 sm:gap-y-16 lg:mt-24 lg:grid-cols-4">
+                    <div class="relative -mx-4 flex overflow-x-auto pb-4 sm:mx-0 sm:block sm:overflow-visible sm:pb-0">
+                        <div class="absolute bottom-0 left-0.5 top-2 hidden w-px bg-slate-200 lg:block"></div>
+                        <div id="zcc-experiment-container"
+                            class="grid auto-cols-auto grid-flow-col justify-start gap-x-8 gap-y-10 whitespace-nowrap px-4 sm:mx-auto sm:max-w-2xl sm:grid-cols-3 sm:px-0 sm:text-center lg:grid-flow-row lg:grid-cols-1 lg:text-left"
+                            role="tablist" aria-orientation="vertical">
+                            <div class="relative lg:pl-8">
+                                <svg aria-hidden="true" viewBox="0 0 6 6"
+                                    class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible lg:block fill-blue-600 stroke-blue-600">
+                                    <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                                </svg>
+                                <div class="relative">
+                                    <div class="font-mono text-sm text-blue-600">
+                                        <button class="ui-not-focus-visible:outline-none"
+                                            id="headlessui-tabs-tab-:R6cqlaqlla:" role="tab" type="button"
+                                            aria-selected="true" tabindex="0" data-headlessui-state="selected"
+                                            aria-controls="headlessui-tabs-panel-:R3alaqlla:">
+                                            <span class="absolute inset-0"></span>Opening Day
+                                        </button>
+                                    </div>
+                                    <div class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">
+                                        <span>April 4</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative lg:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
+                                    class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible lg:block fill-transparent stroke-slate-400">
+                                    <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                                </svg>
+                                <div class="relative">
+                                    <div class="font-mono text-sm text-slate-500"><button
+                                            class="ui-not-focus-visible:outline-none"
+                                            id="headlessui-tabs-tab-:R6kqlaqlla:" role="tab" type="button"
+                                            aria-selected="false" tabindex="-1" data-headlessui-state=""
+                                            aria-controls="headlessui-tabs-panel-:R5alaqlla:"><span
+                                                class="absolute inset-0"></span>Speakers &amp; Workshops</button></div>
+                                    <time datetime="2022-04-05"
+                                        class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April
+                                        5</time>
+                                </div>
+                            </div>
+                            <div class="relative lg:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
+                                    class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible lg:block fill-transparent stroke-slate-400">
+                                    <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
+                                </svg>
+                                <div class="relative">
+                                    <div class="font-mono text-sm text-slate-500"><button
+                                            class="ui-not-focus-visible:outline-none"
+                                            id="headlessui-tabs-tab-:R6sqlaqlla:" role="tab" type="button"
+                                            aria-selected="false" tabindex="-1" data-headlessui-state=""
+                                            aria-controls="headlessui-tabs-panel-:R7alaqlla:"><span
+                                                class="absolute inset-0"></span>Interviews</button></div><time
+                                        datetime="2022-04-06"
+                                        class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April
+                                        6</time>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="relative md:pl-8"><svg aria-hidden="true" viewBox="0 0 6 6"
-                            class="absolute left-[-0.5px] top-[0.5625rem] hidden h-1.5 w-1.5 overflow-visible md:block fill-blue-600 stroke-blue-600">
-                            <path d="M3 0L6 3L3 6L0 3Z" stroke-width="2" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="relative">
-                            <div class="font-mono text-sm text-blue-600"><button
-                                    class="ui-not-focus-visible:outline-none" id="headlessui-tabs-tab-:R6sqlaqlla:"
-                                    role="tab" type="button" aria-selected="true" tabindex="0"
-                                    data-headlessui-state="selected"
-                                    aria-controls="headlessui-tabs-panel-:R7alaqlla:"><span
-                                        class="absolute inset-0"></span>Interviews</button></div><time
-                                datetime="2022-04-06"
-                                class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">April 6</time>
+                    <div class="lg:col-span-3">
+                        <div class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
+                            id="headlessui-tabs-panel-:R3alaqlla:" role="tabpanel" tabindex="0"
+                            data-headlessui-state="selected" aria-labelledby="headlessui-tabs-tab-:R6cqlaqlla:">
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Steven
+                                    McHail</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Designer at Globex Corporation
+                                </p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Jaquelin
+                                    Isch</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">UX Design at InGen</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdianne-guilianelli.b4c5891f.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Dianne
+                                    Guilianelli</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">General Manager at Initech</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fronni-cantadore.0d04b7fe.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Ronni
+                                    Cantadore</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Design Engineer at
+                                    Weyland-Yutani</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ferhart-cockrin.3697fef6.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Erhart
+                                    Cockrin</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Product Lead at Cyberdyne
+                                    Systems</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fparker-johnson.3f6d7276.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Parker
+                                    Johnson</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">UI Designer at MomCorp</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
+                            id="headlessui-tabs-panel-:R5alaqlla:" role="tabpanel" tabindex="-1" hidden=""
+                            style="display:none" data-headlessui-state=""
+                            aria-labelledby="headlessui-tabs-tab-:R6kqlaqlla:">
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdamaris-kimura.5df6b6b2.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Damaris
+                                    Kimura</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Senior Engineer at OCP</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fibrahim-frasch.56350f5a.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Ibrahim
+                                    Frasch</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Programmer at Umbrella Corp</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fcathlene-burrage.1651afc0.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Cathlene
+                                    Burrage</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Frontend Developer at Buy n
+                                    Large</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frinaldo-beynon.c48f36b7.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Rinaldo
+                                    Beynon</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Data Scientist at Rekall</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fwaylon-hyden.4c037cf5.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Waylon
+                                    Hyden</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">DevOps at RDA Corporation</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgiordano-sagucio.2d66325a.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Giordano
+                                    Sagucio</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Game Developer at Soylent Corp
+                                </p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
+                            id="headlessui-tabs-panel-:R7alaqlla:" role="tabpanel" tabindex="-1" hidden=""
+                            style="display:none" data-headlessui-state=""
+                            aria-labelledby="headlessui-tabs-tab-:R6sqlaqlla:">
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fandrew-greene.b3513453.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Andrew
+                                    Greene</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Frontend Developer at Ultratech
+                                </p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fheather-terry.3aaa9642.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Heather
+                                    Terry</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Backend Developer at Xanatos
+                                    Enterprises</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1232" height="616" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fpiers-wilkins.c197a055.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Piers
+                                    Wilkins</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Full stack Developer at BiffCo
+                                </p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fgordon-sanderson.88b5e762.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Gordon
+                                    Sanderson</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Mobile Developer at Cobra
+                                    Industries</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fkimberly-parsons.0e123ad0.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Kimberly
+                                    Parsons</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">Game Developer at Tyrell
+                                    Corporation</p>
+                            </div>
+                            <div>
+                                <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+                                    <div
+                                        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
+                                    </div>
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
+                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                            data-nimg="1"
+                                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                            style="color:transparent"
+                                            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            srcset="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=256&amp;q=75 256w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=384&amp;q=75 384w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=640&amp;q=75 640w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=750&amp;q=75 750w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=828&amp;q=75 828w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=1080&amp;q=75 1080w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=1200&amp;q=75 1200w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=1920&amp;q=75 1920w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=2048&amp;q=75 2048w, /_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=3840&amp;q=75 3840w"
+                                            src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Frichard-astley.599fe903.jpg&amp;w=3840&amp;q=75">
+                                    </div>
+                                </div>
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Richard
+                                    Astley</h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">CEO at Roll Out</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
+
+        <!-- Footer -->
+        <section></section>
+
+        <!-- Script -->
+        <section>
+            <script type="module" src="/src/profile.js"></script>
+        </section>
     </div>
 </body>
 

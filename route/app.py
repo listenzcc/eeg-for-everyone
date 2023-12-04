@@ -37,7 +37,7 @@ from .auth import *
 # Function and class
 app = FastAPI()
 app.add_middleware(GZipMiddleware)
-app.add_middleware(SessionMiddleware, secret_key='secret_key')
+app.add_middleware(SessionMiddleware, secret_key="secret_key")
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 app.mount("/src", StaticFiles(directory="web/src"), name="src")
 app.mount("/asset", StaticFiles(directory="asset"), name="asset")
@@ -48,15 +48,20 @@ templates = Jinja2Templates(directory="web/template")
 # %%
 
 
-def cookies2username(cookies):
-    if token := cookies.get('access_token', None):
+def check_user_name(request: Request):
+    default = None
+    default = "No one from no where in no when"
+
+    cookies = request.cookies
+    if token := cookies.get("access_token", None):
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except Exception:
-            return
-        if username := payload.get('sub'):
+            return default
+        if username := payload.get("sub"):
             return username
-    return
+    return default
+
 
 # %%
 
@@ -64,35 +69,33 @@ def cookies2username(cookies):
 @app.middleware("http")
 async def session_middleware(request: Request, call_next):
     """
-Middleware function that intercepts HTTP requests and performs some operations before and after the request is processed.
+    Middleware function that intercepts HTTP requests and performs some operations before and after the request is processed.
 
-Args:
-    request (Request): The incoming HTTP request.
-    call_next (Callable): The next middleware or route handler to call.
+    Args:
+        request (Request): The incoming HTTP request.
+        call_next (Callable): The next middleware or route handler to call.
 
-Returns:
-    Response: The HTTP response.
+    Returns:
+        Response: The HTTP response.
 
-Examples:
-    # Assuming request is a valid Request object and call_next is a valid callable
-    >>> session_middleware(request, call_next)
-    <Response object>
-"""
+    Examples:
+        # Assuming request is a valid Request object and call_next is a valid callable
+        >>> session_middleware(request, call_next)
+        <Response object>"""
 
     response = await call_next(request)
-    if session := request.cookies.get('session'):
+    if session := request.cookies.get("session"):
         response.set_cookie(
-            key='session', value=request.cookies.get('session'), httponly=True)
+            key="session", value=request.cookies.get("session"), httponly=True
+        )
     return response
 
 
 @app.post("/token", response_model=Token)
 async def require_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    response: Response
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response
 ):
-    user = authenticate_user(
-        fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -103,8 +106,8 @@ async def require_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    response.set_cookie(key='access_token', value=access_token)
-    response.set_cookie(key='token_type', value='bearer')
+    response.set_cookie(key="access_token", value=access_token)
+    response.set_cookie(key="token_type", value="bearer")
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -112,17 +115,16 @@ async def require_for_access_token(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     request: Request,
-    response: Response
+    response: Response,
 ):
-    username = cookies2username(request.cookies)
-    print(f'Username: {username}')
+    username = check_user_name(request)
 
     response = RedirectResponse(
-        url="/template/index.html", status_code=status.HTTP_303_SEE_OTHER)
+        url="/template/profile.html", status_code=status.HTTP_303_SEE_OTHER
+    )
 
     if not username:
-        user = authenticate_user(
-            fake_users_db, form_data.username, form_data.password)
+        user = authenticate_user(fake_users_db, form_data.username, form_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -133,8 +135,8 @@ async def login_for_access_token(
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
-        response.set_cookie(key='access_token', value=access_token)
-        response.set_cookie(key='token_type', value='bearer')
+        response.set_cookie(key="access_token", value=access_token)
+        response.set_cookie(key="token_type", value="bearer")
 
     # templates.TemplateResponse("index.html", {"request": request})
     return response
@@ -164,62 +166,63 @@ async def index(
     # token: Annotated[str, Depends(oauth2_scheme)]
 ):
     """
-Handles the HTTP GET request to the root URL ("/") and returns the index.html template.
+    Handles the HTTP GET request to the root URL ("/") and returns the index.html template.
 
-Args:
-    request (Request): The incoming HTTP request.
+    Args:
+        request (Request): The incoming HTTP request.
 
-Returns:
-    TemplateResponse: The rendered index.html template.
+    Returns:
+        TemplateResponse: The rendered index.html template.
 
-Examples:
-    # Assuming request is a valid Request object
-    >>> index(request)
-    <TemplateResponse object>
-"""
+    Examples:
+        # Assuming request is a valid Request object
+        >>> index(request)
+        <TemplateResponse object>"""
 
-    request.session['no-matter-what'] = 'a'  # unique_md5()
-    request.cookies['sayHi'] = 'Hello from chuncheng.zhang@ia.ac.cn'
+    request.session["no-matter-what"] = "a"  # unique_md5()
+    request.cookies["sayHi"] = "Hello from chuncheng.zhang@ia.ac.cn"
     print(request.cookies)
 
-    username = cookies2username(request.cookies)
-    print(f'Username: {username}')
+    username = check_user_name(request)
+    print(f"Username: {username}")
     if not username:
-        return templates.TemplateResponse('login.html', {'request': request})
+        return templates.TemplateResponse("login.html", {"request": request})
 
     # print(token)
 
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("profile.html", {"request": request})
 
 
-@app.get('/template/{template_name}')
+@app.get("/template/{template_name}")
 async def index(template_name: str, request: Request):
     """
-Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
+    Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
 
-Args:
-    template_name (str): The name of the template to render.
-    request (Request): The incoming HTTP request.
+    Args:
+        template_name (str): The name of the template to render.
+        request (Request): The incoming HTTP request.
 
-Returns:
-    TemplateResponse: The rendered template.
+    Returns:
+        TemplateResponse: The rendered template.
 
-Examples:
-    # Assuming template_name is a valid template name and request is a valid Request object
-    >>> index(template_name, request)
-    <TemplateResponse object>
-"""
+    Examples:
+        # Assuming template_name is a valid template name and request is a valid Request object
+        >>> index(template_name, request)
+        <TemplateResponse object>"""
 
     print(request.cookies)
-    if not template_name.endswith('.html'):
-        template_name += '.html'
+    if not template_name.endswith(".html"):
+        template_name += ".html"
 
-    username = cookies2username(request.cookies)
-    print(f'Username: {username}')
+    username = check_user_name(request)
+    print(f"Username: {username}")
     if not username:
-        return templates.TemplateResponse('login.html', {'request': request})
+        return templates.TemplateResponse("login.html", {"request": request})
 
-    return templates.TemplateResponse(template_name, dict(request=request, username=username))
+    return templates.TemplateResponse(
+        template_name, dict(request=request, username=username)
+    )
+
 
 # %% ---- 2023-11-27 ------------------------
 # Pending
