@@ -31,15 +31,43 @@ from .error_box import eb
 # %% ---- 2023-11-23 ------------------------
 # Function and class
 def _multiple_data_type(path):
+    """
+Check the data type of the given path and return the corresponding information.
+
+Args:
+    path (Path): The path to the data file.
+
+Returns:
+    dict: A dictionary containing the name of the data type and the corresponding file paths.
+
+Raises:
+    ValueError: If the input data path is invalid.
+
+Examples:
+    >>> _multiple_data_type(Path('data.cnt'))
+    {'name': 'cnt', 'path': Path('data.cnt')}
+    >>> _multiple_data_type(Path('data.bdf'))
+    {'name': 'bdf', 'data': Path('data/data.bdf'), 'evt': Path('data/evt.bdf')}
+"""
+
     if path.is_file() and path.name.endswith('.cnt'):
         LOGGER.debug(f'Known data type: cnt = {path}')
         return dict(name='cnt', path=path)
 
-    if path.is_dir() and path.joinpath('data.bdf').is_file() and path.joinpath('evt.bdf').is_file():
+    if path.is_file() and path.name.endswith('.bdf'):
         LOGGER.debug(f'Known data type: bdf = {path}')
-        return dict(name='bdf', data=path.joinpath('data.bdf'), evt=path.joinpath('evt.bdf'))
+        data = path.parent.joinpath('data.bdf')
+        evt = path.parent.joinpath('evt.bdf')
 
-    raise ValueError(f'Invalid data type: {path}')
+        if data.is_file() and evt.is_file():
+            return dict(name='bdf', data=data, evt=evt)
+
+        if not data.is_file():
+            LOGGER.error(f'Missing required data file: {data}')
+        if not evt.is_file():
+            LOGGER.error(f'Missing required evt file: {evt}')
+
+    raise ValueError(f'Invalid input data path: {path}')
 
 
 class LoadRaw(object):
@@ -76,12 +104,13 @@ class LoadRaw(object):
 
             if dct['name'] == 'cnt':
                 raw = mne.io.read_raw(dct['path'])
-
-            if dct['name'] == 'bdf':
+            elif dct['name'] == 'bdf':
                 raw = mne.io.read_raw(dct['data'])
                 annotations = mne.read_annotations(dct['evt'])
                 raw.set_annotations(annotations, verbose=True)
                 LOGGER.debug(f'Cloned annotations {annotations} from evt to data')
+            else:
+                raise ValueError(f'Received unsupported data path dct: {dct}')
 
             mapping = {}
             for n in raw.info.ch_names:

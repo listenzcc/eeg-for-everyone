@@ -31,12 +31,13 @@ from dataclasses import dataclass
 # %%
 root = Path(__file__).parent.parent
 
-_folder = dict(
-    log=root.joinpath('log'),
-    fs=root.joinpath('filesystem')
+_folders = dict(
+    log=root.joinpath("log"),
+    cache_root=root.joinpath("filesystem"),
+    data_root=Path("D:\脑机接口专项"),
 )
 
-[v.mkdir(exist_ok=True) for k, v in _folder.items()]
+[v.mkdir(exist_ok=True) for k, v in _folders.items()]
 
 # %% ---- 2023-11-23 ------------------------
 # Function and class
@@ -45,7 +46,7 @@ _folder = dict(
 def init_logger():
     now = datetime.now()  # current date and time
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-    logger.add(_folder['log'].joinpath(f'{date_time}.log'))
+    logger.add(_folders["log"].joinpath(f"{date_time}.log"))
     return logger
 
 
@@ -59,41 +60,26 @@ def singleton(cls, *args, **kw):
         if cls not in instances:
             instances[cls] = cls(*args, **kw)
         else:
-            LOGGER.debug(f'Using existing instance: {instances[cls]}')
+            LOGGER.debug(f"Using existing instance: {instances[cls]}")
 
         return instances[cls]
 
     return _singleton
 
 
-@singleton
-class ZccFileSystem(object):
-    root = _folder['fs']
-
-    def __init__(self):
-        pass
-
-    def legal_path(self, subpath):
-        p = self.root.joinpath(subpath)
-        if not p.is_file():
-            LOGGER.warning(f'Invalid file: {p}')
-        p.parent.mkdir(exist_ok=True, parents=True)
-        return p
-
-
 # %%
 # CONF
 @dataclass
 class Project:
-    _name: str = 'EEG for everyone'
-    _version: str = '0.1'
-    _author: str = 'Chuncheng Zhang'
+    _name: str = "EEG for everyone"
+    _version: str = "0.1"
+    _author: str = "Chuncheng Zhang"
 
 
 @dataclass
 class Runtime(Project):
     today: str = datetime.now()
-    folder: str = str(_folder)
+    folder: str = str(_folders)
 
 
 class AllowedProtocol(Enum):
@@ -104,13 +90,13 @@ class AllowedProtocol(Enum):
 
 @dataclass
 class Dynamic(Runtime):
-    username: str = 'No one'
+    username: str = "No one"
     fs: int = 1000  # Hz
     protocol: AllowedProtocol = AllowedProtocol.MI
 
 
 CONF = OmegaConf.structured(Dynamic)
-LOGGER.debug(f'Started with {CONF}')
+LOGGER.debug(f"Started with {CONF}")
 
 # %% ---- 2023-11-23 ------------------------
 # Play ground
