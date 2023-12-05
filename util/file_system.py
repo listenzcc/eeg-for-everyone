@@ -61,16 +61,20 @@ def _guess_experiment_by_relative_path(relative_path: Path):
 
 
 @singleton
-class DataFileSystem(BaseFileSystem):
+class ZccFileSystem(BaseFileSystem):
     found_data_files = []
     df = None
 
     def __init__(self):
         super(BaseFileSystem, self).__init__()
+        self.search_data()
 
-    def search_data(self, exts: list = None):
+    def search_data(self, exts: list = None, using_existing_df: bool = True):
+        if using_existing_df and self.df is not None:
+            return self.df
+
         if exts is None:
-            exts = [".bdf"]
+            exts = ["data.bdf"]
 
         files = list(os.walk(self.data_root))
         data_files = []

@@ -15,7 +15,7 @@ let whoAmI = () => {
     token = cookies.access_token || ''
 
     $.ajax({
-        url: "users/me",
+        url: "/users/me",
         type: 'get',
         contentType: 'application/json',
         headers: {

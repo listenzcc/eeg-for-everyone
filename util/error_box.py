@@ -32,9 +32,10 @@ class ErrorBox(object):
     def __init__(self):
         pass
 
-    def on_error(self, err):
+    def on_error(self, err, detail=None):
         t = time.time()
-        detail = traceback.format_exc()
+        if detail is None:
+            detail = traceback.format_exc()
         self.buffer.append(dict(t=t, err=err, detail=detail))
 
 

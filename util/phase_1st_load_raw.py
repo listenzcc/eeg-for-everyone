@@ -59,13 +59,12 @@ Examples:
         data = path.parent.joinpath('data.bdf')
         evt = path.parent.joinpath('evt.bdf')
 
+        assert data.is_file(), f'Missing required data file: {data}'
+        assert evt.is_file(), f'Missing required evt file: {evt}'
+
         if data.is_file() and evt.is_file():
             return dict(name='bdf', data=data, evt=evt)
 
-        if not data.is_file():
-            LOGGER.error(f'Missing required data file: {data}')
-        if not evt.is_file():
-            LOGGER.error(f'Missing required evt file: {evt}')
 
     raise ValueError(f'Invalid input data path: {path}')
 

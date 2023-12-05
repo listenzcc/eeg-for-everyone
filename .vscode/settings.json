@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["fastapi", "fsaverage", "loguru", "omegaconf", "tqdm"]
+  "cSpell.words": [
+    "dataframe",
+    "fastapi",
+    "fsaverage",
+    "loguru",
+    "omegaconf",
+    "tqdm"
+  ]
 }

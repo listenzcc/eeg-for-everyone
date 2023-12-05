@@ -2,7 +2,7 @@ console.log("profile.js starts. >>>>>>>>");
 
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm'
 
-d3.csv('/experiments.csv').then(raw => {
+d3.csv('/zcc/experiments.csv').then(raw => {
     console.log(raw)
 
     let div = d3.select('#zcc-experiment-container')
@@ -28,6 +28,36 @@ d3.csv('/experiments.csv').then(raw => {
         </div>
     </div>
 </div>
+    `)
+
+})
+
+d3.csv('/zcc/data_files.csv').then(raw => {
+    console.log(raw)
+
+    let div = d3.select('#zcc-data-container')
+    div.selectAll('div').data([]).exit().remove()
+
+    div.selectAll('div').data(raw).enter().append('div').html(d => `
+<div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
+    <div
+        class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
+    </div>
+    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)">
+        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+            data-nimg="1"
+            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
+            style="color:transparent"
+            sizes="(min-width: 1280px) 17.5rem, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+            src="/asset/img/EEG.png">
+    </div>
+</div>
+<h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">
+    <span>${d.experiment}</span>
+</h3>
+<p class="mt-1 text-base tracking-tight text-slate-500">
+    <span>${d.path}</span>
+</p>
     `)
 
 })

@@ -85,12 +85,8 @@ class Experiments(dict):
             self[setup.name] = setup
             LOGGER.debug(f"Initialized {setup.name} setup: {setup}")
 
-    def to_csv(self):
-        df = pd.DataFrame(list(self.values()))
-        stream = io.StringIO()
-        df.to_csv(stream)
-        print(stream.getvalue())
-        return stream.getvalue()
+    def to_df(self):
+        return pd.DataFrame(list(self.values()))
 
 
 # %% ---- 2023-12-04 ------------------------

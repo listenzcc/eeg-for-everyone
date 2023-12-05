@@ -31,8 +31,8 @@
                             </div>
 
                             <!-- Middle entries -->
-                            <div class="visible md:block">
-                                <div class="ml-10 flex items-baseline space-x-4">
+                            <div class="block md:block">
+                                <div class="ml-10 inline-block md:flex items-baseline space-x-4">
                                     <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
                                     <a href="#" class="bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"
                                         aria-current="page">Profile</a>
@@ -51,7 +51,7 @@
                         </div>
 
                         <!-- Right panel -->
-                        <div class="visible md:block">
+                        <div class="hidden md:block">
                             <div class="ml-4 flex items-center md:ml-6">
                                 <!-- Left icon -->
                                 <button type="button" data-ripple-light="true"
@@ -78,6 +78,7 @@
                                         </button>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -100,6 +101,7 @@
                     class="mt-14 grid grid-cols-1 items-start gap-x-8 gap-y-8 sm:mt-16 sm:gap-y-16 lg:mt-24 lg:grid-cols-4">
                     <div class="relative -mx-4 flex overflow-x-auto pb-4 sm:mx-0 sm:block sm:overflow-visible sm:pb-0">
                         <div class="absolute bottom-0 left-0.5 top-2 hidden w-px bg-slate-200 lg:block"></div>
+                        <!-- Experiment selection -->
                         <div id="zcc-experiment-container"
                             class="grid auto-cols-auto grid-flow-col justify-start gap-x-8 gap-y-10 whitespace-nowrap px-4 sm:mx-auto sm:max-w-2xl sm:grid-cols-3 sm:px-0 sm:text-center lg:grid-flow-row lg:grid-cols-1 lg:text-left"
                             role="tablist" aria-orientation="vertical">
@@ -157,16 +159,20 @@
                         </div>
                     </div>
                     <div class="lg:col-span-3">
-                        <div class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
+
+                        <!-- Data selection -->
+                        <div id="zcc-data-container"
+                            class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
                             id="headlessui-tabs-panel-:R3alaqlla:" role="tabpanel" tabindex="0"
                             data-headlessui-state="selected" aria-labelledby="headlessui-tabs-tab-:R6cqlaqlla:">
+
                             <div>
                                 <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -175,9 +181,11 @@
                                             src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsteven-mchail.4e94472e.jpg&amp;w=3840&amp;q=75">
                                     </div>
                                 </div>
-                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Steven
-                                    McHail</h3>
-                                <p class="mt-1 text-base tracking-tight text-slate-500">Designer at Globex Corporation
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">
+                                    <span>Steven McHail</span>
+                                </h3>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">
+                                    <span>Designer at Globex Corporation</span>
                                 </p>
                             </div>
                             <div>
@@ -185,8 +193,8 @@
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -195,7 +203,8 @@
                                             src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fjaquelin-isch.880e5248.jpg&amp;w=3840&amp;q=75">
                                     </div>
                                 </div>
-                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Jaquelin
+                                <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">
+                                    Jaquelin
                                     Isch</h3>
                                 <p class="mt-1 text-base tracking-tight text-slate-500">UX Design at InGen</p>
                             </div>
@@ -204,8 +213,8 @@
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -216,15 +225,16 @@
                                 </div>
                                 <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">Dianne
                                     Guilianelli</h3>
-                                <p class="mt-1 text-base tracking-tight text-slate-500">General Manager at Initech</p>
+                                <p class="mt-1 text-base tracking-tight text-slate-500">General Manager at Initech
+                                </p>
                             </div>
                             <div>
                                 <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -243,8 +253,8 @@
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-indigo-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-1)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -263,8 +273,8 @@
                                     <div
                                         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-sky-300">
                                     </div>
-                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)"><img
-                                            alt="" fetchpriority="high" width="1120" height="560" decoding="async"
+                                    <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-2)">
+                                        <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
                                             data-nimg="1"
                                             class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-110"
                                             style="color:transparent"
@@ -277,6 +287,7 @@
                                     Johnson</h3>
                                 <p class="mt-1 text-base tracking-tight text-slate-500">UI Designer at MomCorp</p>
                             </div>
+
                         </div>
                         <div class="grid grid-cols-1 gap-x-8 gap-y-10 ui-not-focus-visible:outline-none sm:grid-cols-2 sm:gap-y-16 md:grid-cols-3"
                             id="headlessui-tabs-panel-:R5alaqlla:" role="tabpanel" tabindex="-1" hidden=""
