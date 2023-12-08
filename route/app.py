@@ -190,7 +190,9 @@ async def index(
 
     # print(token)
 
-    return templates.TemplateResponse("profile.html", {"request": request})
+    return templates.TemplateResponse(
+        "profile.html", dict(request=request, username=username)
+    )
 
 
 @app.get("/template/{template_name}")
