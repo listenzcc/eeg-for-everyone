@@ -198,7 +198,11 @@ async def index(
 
 
 @app.get("/template/{template_name}")
-async def index(template_name: str, request: Request, experimentName: str = ''):
+async def index(template_name: str,
+                request: Request,
+                experimentName: str = '',
+                subjectID: str = '',
+                ):
     """
 Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
 
@@ -215,7 +219,8 @@ Examples:
     <TemplateResponse object>
 """
     params = dict(
-        experimentName=experimentName
+        experimentName=experimentName,
+        subjectID=subjectID,
     )
 
     if not template_name.endswith(".html"):

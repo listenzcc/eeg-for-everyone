@@ -87,8 +87,11 @@ class ZccFileSystem(BaseFileSystem):
         LOGGER.debug(f"Found data files: {data_files}")
 
         df = pd.DataFrame(data_files, columns=["path"])
+        df['subjectID'] = df['path'].map(
+            lambda e: e.relative_to(self.data_root).as_posix().replace('/', '-'))
         df["experiment"] = df["path"].map(
-            lambda e: _guess_experiment_by_relative_path(e.relative_to(self.data_root))
+            lambda e: _guess_experiment_by_relative_path(
+                e.relative_to(self.data_root))
         )
         self.df = df
         LOGGER.debug("Built data frame")

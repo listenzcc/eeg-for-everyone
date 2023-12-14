@@ -60,6 +60,8 @@ async def get_data_files_csv(request: Request, response_class=StreamingResponse,
     if experimentName:
         df = df.query(f'experiment=="{experimentName}"')
 
+    print(df)
+
     csv = df2csv(df)
     return StreamingResponse(iter(csv), media_type="text/csv")
 
