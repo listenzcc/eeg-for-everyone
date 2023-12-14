@@ -40,7 +40,7 @@ zss = ZccSessionSystem()
 
 
 @app.get("/zcc/experiments.csv")
-async def get_experiments_csv(request: Request, response_class=StreamingResponse):
+async def get_experiments_csv(request: Request, response_class=StreamingResponse, experimentName: str = ''):
     username = check_user_name(request)
     LOGGER.debug(f"Checked username: {username}")
     df = experiments.to_df()
@@ -49,12 +49,17 @@ async def get_experiments_csv(request: Request, response_class=StreamingResponse
 
 
 @app.get("/zcc/data_files.csv")
-async def get_data_files_csv(request: Request, response_class=StreamingResponse):
+async def get_data_files_csv(request: Request, response_class=StreamingResponse, experimentName: str = ''):
     username = check_user_name(request)
     LOGGER.debug(f"Checked username: {username}")
     session = zss.get_session(username)
-    print(zss.list_sessions())
+    print(LOGGER.debug(f'Current sessions: {zss.list_sessions()}'))
+
     df = session.zfs.search_data()
+
+    if experimentName:
+        df = df.query(f'experiment=="{experimentName}"')
+
     csv = df2csv(df)
     return StreamingResponse(iter(csv), media_type="text/csv")
 

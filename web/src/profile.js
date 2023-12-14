@@ -2,6 +2,8 @@ console.log("profile.js starts. >>>>>>>>");
 
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm'
 
+let _experimentName = document.getElementById('_experimentName').value
+
 d3.csv('/zcc/experiments.csv').then(raw => {
     console.log(raw)
 
@@ -16,15 +18,17 @@ d3.csv('/zcc/experiments.csv').then(raw => {
     </svg>
     <div class="relative">
         <div class="font-mono text-sm text-blue-600">
-            <button class="ui-not-focus-visible:outline-none"
-                id="headlessui-tabs-tab-:R6cqlaqlla:" role="tab" type="button"
+            <button class="ui-not-focus-visible:outline-none" role="tab" type="button"
                 aria-selected="true" tabindex="0" data-headlessui-state="selected"
-                aria-controls="headlessui-tabs-panel-:R3alaqlla:">
-                <span class="absolute inset-0"></span>${d.detail}
+                onclick="location.href='/template/profile.html?experimentName=${d.name}'"
+                >
+
+                <span class="inset-0">${d.detail}</span>
+
+                <div class="text-left mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">
+                    <span>${d.name}</span>
+                </div>
             </button>
-        </div>
-        <div class="mt-1.5 block text-2xl font-semibold tracking-tight text-blue-900">
-            <span>${d.name}</span>
         </div>
     </div>
 </div>
@@ -32,17 +36,19 @@ d3.csv('/zcc/experiments.csv').then(raw => {
 
 })
 
-d3.csv('/zcc/data_files.csv').then(raw => {
+d3.csv(`/zcc/data_files.csv?experimentName=${_experimentName}`).then(raw => {
     console.log(raw)
 
     let div = d3.select('#zcc-data-container')
     div.selectAll('div').data([]).exit().remove()
 
     div.selectAll('div').data(raw).enter().append('div').html(d => `
+<div>
 <div class="group relative h-[17.5rem] transform overflow-hidden rounded-4xl">
     <div
         class="absolute bottom-6 left-0 right-4 top-0 rounded-4xl border transition duration-300 group-hover:scale-95 xl:right-6 border-blue-300">
     </div>
+
     <div class="absolute inset-0 bg-indigo-50" style="clip-path:url(#:R1aqlla:-0)">
         <img alt="" fetchpriority="high" width="1120" height="560" decoding="async"
             data-nimg="1"
@@ -52,13 +58,17 @@ d3.csv('/zcc/data_files.csv').then(raw => {
             src="/asset/img/EEG.png">
     </div>
 </div>
-<h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">
-    <span>${d.experiment}</span>
-</h3>
-<p class="mt-1 text-base tracking-tight text-slate-500">
-    <span>${d.path}</span>
-</p>
-    `)
+
+<div>
+    <h3 class="mt-8 font-display text-xl font-bold tracking-tight text-slate-900">
+        <span>${d.experiment}</span>
+    </h3>
+    <p class="mt-1 text-base tracking-tight text-slate-500">
+        <span>${d.path}</span>
+    </p>
+</div>
+<div>
+`)
 
 })
 

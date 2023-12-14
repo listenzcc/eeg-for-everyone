@@ -95,7 +95,8 @@ async def session_middleware(request: Request, call_next):
 async def require_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response
 ):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(
+        fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -124,7 +125,8 @@ async def login_for_access_token(
     )
 
     if not username:
-        user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+        user = authenticate_user(
+            fake_users_db, form_data.username, form_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -196,35 +198,43 @@ async def index(
 
 
 @app.get("/template/{template_name}")
-async def index(template_name: str, request: Request):
+async def index(template_name: str, request: Request, experimentName: str = ''):
     """
-    Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
+Handles the HTTP GET request to the "/template/{template_name}" URL and returns the specified template.
 
-    Args:
-        template_name (str): The name of the template to render.
-        request (Request): The incoming HTTP request.
+Args:
+    template_name (str): The name of the template to render.
+    request (Request): The incoming HTTP request.
 
-    Returns:
-        TemplateResponse: The rendered template.
+Returns:
+    TemplateResponse: The rendered template.
 
-    Examples:
-        # Assuming template_name is a valid template name and request is a valid Request object
-        >>> index(template_name, request)
-        <TemplateResponse object>"""
+Examples:
+    # Assuming template_name is a valid template name and request is a valid Request object
+    >>> index(template_name, request)
+    <TemplateResponse object>
+"""
+    params = dict(
+        experimentName=experimentName
+    )
 
-    print(request.cookies)
     if not template_name.endswith(".html"):
         template_name += ".html"
 
     username = check_user_name(request)
-    print(f"Username: {username}")
+
+    print('\n---- Template required ----')
+    print(f'Params: {params}')
+    print(f'Cookies: {request.cookies}')
+    print(f'Username: {username}')
+    print('\n')
+
     if not username:
         return templates.TemplateResponse("login.html", {"request": request})
 
     return templates.TemplateResponse(
-        template_name, dict(request=request, username=username)
+        template_name, dict(params, request=request, username=username)
     )
-
 
 # %% ---- 2023-11-27 ------------------------
 # Pending
