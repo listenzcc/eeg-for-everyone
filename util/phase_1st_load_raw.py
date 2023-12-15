@@ -65,11 +65,10 @@ Examples:
         if data.is_file() and evt.is_file():
             return dict(name='bdf', data=data, evt=evt)
 
-
     raise ValueError(f'Invalid input data path: {path}')
 
 
-class LoadRaw(object):
+class ZccEEGRaw(object):
     path = None
     raw = None
     montage = None
@@ -107,7 +106,8 @@ class LoadRaw(object):
                 raw = mne.io.read_raw(dct['data'])
                 annotations = mne.read_annotations(dct['evt'])
                 raw.set_annotations(annotations, verbose=True)
-                LOGGER.debug(f'Cloned annotations {annotations} from evt to data')
+                LOGGER.debug(f'Cloned annotations {
+                             annotations} from evt to data')
             else:
                 raise ValueError(f'Received unsupported data path dct: {dct}')
 

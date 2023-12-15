@@ -19,8 +19,10 @@ Functions:
 # %% ---- 2023-11-28 ------------------------
 # Requirements and constants
 import os
+import json
 import pandas as pd
 
+from pathlib import Path
 from rich import print, inspect
 
 from fastapi import Request
@@ -51,9 +53,9 @@ async def get_experiments_csv(request: Request, response_class=StreamingResponse
 @app.get("/zcc/data_files.csv")
 async def get_data_files_csv(request: Request, response_class=StreamingResponse, experimentName: str = ''):
     username = check_user_name(request)
-    LOGGER.debug(f"Checked username: {username}")
     session = zss.get_session(username)
-    print(LOGGER.debug(f'Current sessions: {zss.list_sessions()}'))
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f'Current session: {session}')
 
     df = session.zfs.search_data()
 
@@ -64,6 +66,44 @@ async def get_data_files_csv(request: Request, response_class=StreamingResponse,
 
     csv = df2csv(df)
     return StreamingResponse(iter(csv), media_type="text/csv")
+
+
+@app.get('/zcc/eegAnalysis.json')
+async def start_eeg_analysis_json(request: Request, response_class=StreamingResponse, experimentName: str = '', subjectID: str = ''):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f'Current session: {session}')
+
+    params = dict(
+        experimentName=experimentName,
+        subjectID=subjectID
+    )
+
+    df = session.zfs.search_data()
+    df = df.query(f'subjectID=="{subjectID}"')
+
+    # Not found any data
+    if len(df) == 0:
+        LOGGER.error(f'Not found subjectID: {subjectID}')
+        res = dict(params, fail='Not found subjectID')
+        return StreamingResponse(iter(json.dumps(res)), media_type='text/json')
+
+    # Found multiple data
+    if len(df) > 1:
+        LOGGER.warning(f'Multiple subjectIDs: {df}')
+
+    # Found one data, which is correct
+    selected = dict(df.iloc[0])
+    LOGGER.debug(f'Selected subjectID ({subjectID}): {selected}')
+
+    # Do something with the session
+    session.starts_with_raw(Path(selected['path']))
+
+    # Return the stuff
+    selected['path'] = Path(selected['path']).as_posix()
+    res = params | selected
+    return StreamingResponse(iter(json.dumps(res)), media_type='text/json')
 
 
 # %% ---- 2023-11-28 ------------------------

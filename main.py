@@ -22,7 +22,7 @@ import pandas as pd
 
 from rich import print, inspect
 from util import LOGGER
-from util.phase_1st_load_raw import LoadRaw
+from util.phase_1st_load_raw import ZccEEGRaw
 from util.file_system import ZccFileSystem
 
 # %% ---- 2023-11-23 ------------------------
