@@ -3,7 +3,7 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm'
 let _experimentName = document.getElementById('_experimentName').value
 
 // Update the list of experiment names
-d3.csv('/zcc/experiments.csv').then(raw => {
+d3.csv('/zcc/getExperiments.csv').then(raw => {
     // Setup onclick href for every elements
     // By design, it refreshes the list of experiment names
     let href;
@@ -45,12 +45,12 @@ d3.csv('/zcc/experiments.csv').then(raw => {
 })
 
 // Update the file list of the experiment
-d3.csv(`/zcc/data_files.csv?experimentName=${_experimentName}`).then(raw => {
+d3.csv(`/zcc/getDataFiles.csv?experimentName=${_experimentName}`).then(raw => {
     // Setup onclick href for every elements
     // By design, it jumps into the analysis page for the clicked data
     let href;
     raw.map(d => {
-        href = `/template/analysis.html?subjectID=${d.subjectID}&experimentName=${d.experiment}`
+        href = `/template/raw.html?subjectID=${d.subjectID}&experimentName=${d.experiment}`
         Object.assign(d, { href })
     })
     console.log(raw)

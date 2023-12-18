@@ -32,23 +32,22 @@ from .phase_1st_load_raw import ZccEEGRaw
 # Function and class
 class ZccSession(object):
     """
-ZccSession class.
+    ZccSession class.
 
-A class representing a user session.
-It provides methods to refresh the session timestamp, calculate the idle time in seconds, and load raw EEG data.
+    A class representing a user session.
+    It provides methods to refresh the session timestamp, calculate the idle time in seconds, and load raw EEG data.
 
-Args:
-    sessionName (str): The name of the session.
+    Args:
+        sessionName (str): The name of the session.
 
-Returns:
-    None.
+    Returns:
+        None.
 
-Raises:
-    None.
-"""
+    Raises:
+        None."""
 
     time = time.time()
-    eeg_raw = None
+    eeg_data = None
     subjectID = None
     zfs = ZccFileSystem()
 
@@ -64,32 +63,34 @@ Raises:
         return time.time() - self.time
 
     def starts_with_raw(self, data_path: Path):
-        self.eeg_raw = ZccEEGRaw(data_path)
+        self.eeg_data = ZccEEGRaw(data_path)
+        self.eeg_data.load_raw()
+        self.eeg_data.fix_montage()
+        self.eeg_data.get_events()
 
 
 @singleton
 class ZccSessionSystem(object):
     """
-ZccSessionSystem class.
+    ZccSessionSystem class.
 
-A singleton class that manages user sessions.
-It provides methods to get a session, list all sessions, and remove idle sessions that have been active for too long.
+    A singleton class that manages user sessions.
+    It provides methods to get a session, list all sessions, and remove idle sessions that have been active for too long.
 
-Args:
-    username (str, optional): The username associated with the session.
+    Args:
+        username (str, optional): The username associated with the session.
 
-Returns:
-    ZccSession or None: The session object associated with the given username, or None if the username is invalid.
+    Returns:
+        ZccSession or None: The session object associated with the given username, or None if the username is invalid.
 
-Raises:
-    None.
+    Raises:
+        None.
 
-Examples:
-    session_system = ZccSessionSystem()
-    session = session_system.get_session("user123")
-    session_system.list_sessions()
-    session_system.remove_idle_too_long_sessions()
-"""
+    Examples:
+        session_system = ZccSessionSystem()
+        session = session_system.get_session("user123")
+        session_system.list_sessions()
+        session_system.remove_idle_too_long_sessions()"""
 
     sessions = {}
     too_long_secs = 5 * 60 * 60  # Hours x minutes x seconds, 5 hours
@@ -98,6 +99,24 @@ Examples:
         pass
 
     def get_session(self, username: str = None):
+        """
+        Returns the session associated with the given username. If the username is None, an error is logged and None is returned.
+        If an existing session is found, its timestamp is refreshed and the session is returned. Otherwise, a new session is created and returned.
+
+        Args:
+            username (str): The username associated with the session.
+
+        Returns:
+            ZccSession or None: The session associated with the given username, or None if the username is invalid.
+
+        Raises:
+            None
+
+        Examples:
+            session = get_session("john")
+            if session:
+                print(session)"""
+
         if username is None:
             LOGGER.error(f"Invalid session name: {username}")
             return None
@@ -115,7 +134,7 @@ Examples:
     def list_sessions(self):
         data = [(k, v.idle_secs()) for k, v in self.sessions.items()]
         df = pd.DataFrame(data, columns=["name", "idleSecs"])
-        LOGGER.debug(f'List sessions: {df}')
+        LOGGER.debug(f"List sessions: {df}")
         return df
 
     def remove_idle_too_long_sessions(self):
