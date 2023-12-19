@@ -893,6 +893,14 @@ video {
   width: 83.333333%;
 }
 
+.w-96 {
+  width: 24rem;
+}
+
+.w-1\/2 {
+  width: 50%;
+}
+
 .min-w-\[10in\] {
   min-width: 10in;
 }
@@ -1001,6 +1009,10 @@ video {
 
 .flex-col {
   flex-direction: column;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
 }
 
 .items-start {

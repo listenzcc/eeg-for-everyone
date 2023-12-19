@@ -70,8 +70,6 @@ async def get_data_files_csv(
     if experimentName:
         df = df.query(f'experiment=="{experimentName}"')
 
-    print(df)
-
     csv = df2csv(df)
     return StreamingResponse(iter(csv), media_type="text/csv")
 
@@ -263,14 +261,12 @@ async def get_eeg_raw_data_csv(
     # Data size is converted into (time points x channels)
     data = raw.get_data().transpose()
     data -= np.mean(data, axis=0)
-    print(np.mean(data, axis=0))
 
     data_df = pd.DataFrame(data, columns=raw.info["ch_names"])
     data_df["seconds"] = data_df.index / raw.info["sfreq"]
     lower = seconds - windowLength / 2
     upper = seconds + windowLength / 2
     data_df = data_df.query(f"seconds < {upper}").query(f"seconds > {lower}")
-    print(data_df)
 
     events_df = pd.DataFrame(events, columns=["samples", "duration", "label"])
     events_df["seconds"] = events_df["samples"] / raw.info["sfreq"]

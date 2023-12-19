@@ -30,24 +30,29 @@ let colorMap = d3.schemeCategory10,
 let cube,
     camera,
     renderer,
-    brainMesh,
     scene,
     stats,
+    brainMesh,
     texts,
-    aparcNodes,
-    eegSensorSpheres,
-    eegSensors;
+    eegSensors,
+    events,
+    eegDataSegment;
 
-// Main loop
-d3.json(
-    `/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=${_subjectID}`
-).then((raw) => {
+
+// Start analysis
+d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then((startAnalysis) => {
+    console.log(startAnalysis)
     getRawInfo();
     drawRawMontage();
-    drawRawEvents();
-});
+    drawEvents();
+})
 
-let drawEEGRawData = (seconds = 100, windowLength = 1) => {
+
+let drawEEGRawData = (seconds = 100, windowLength = 3) => {
+    if (document.getElementById('zcc-SelectedEEGSeconds')) {
+        seconds = document.getElementById('zcc-SelectedEEGSeconds').value;
+    }
+
     d3.csv(
         `/zcc/getEEGRawData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&seconds=${seconds}&windowLength=${windowLength}`
     ).then((dataCsv) => {
@@ -56,35 +61,72 @@ let drawEEGRawData = (seconds = 100, windowLength = 1) => {
             dataCsv.columns.map((c) => (d[c] = parseFloat(d[c])));
         });
         console.log(dataCsv, chNames);
+        eegDataSegment = dataCsv;
 
         if (_zccEEGDataControllerContainer.childElementCount === 0) {
-            let select = d3.select(_zccEEGDataControllerContainer)
-                .append("select")
+            {
+                let select = d3.select(_zccEEGDataControllerContainer)
+                    .append('div').attr('class', 'w-96')
+                    .append('label').text('Select sensor:')
+                    .append("select").attr('id', 'zcc-SelectedEEGSensorName')
 
-            select
-                .selectAll("option")
-                .data(['--'].concat(chNames))
-                .enter()
-                .append("option")
-                .attr("value", (d) => d)
-                .text((d) => d)
+                select
+                    .selectAll("option")
+                    .data(['--'].concat(chNames))
+                    .enter()
+                    .append("option")
+                    .attr("value", (d) => d)
+                    .text((d) => d)
 
-            console.log(select)
+                select
+                    .on('input', e => {
+                        let name = e.target.value
+                        plotEEGData(chNames, name)
+                        plotSensorsFlat(name)
+                        // drawEEGRawData()
+                        console.log(texts)
+                        texts.map(text => {
+                            console.log(text.name, name);
+                            text.name === name ? Object.assign(text.scale, { x: 3, y: 3, z: 3 }) : Object.assign(text.scale, { x: 1, y: 1, z: 1 })
+                        })
+                    })
+            }
 
-            select
-                .on('input', e => {
-                    plotEEGData(dataCsv, chNames, e.target.value)
-                })
+            {
+                let select = d3.select(_zccEEGDataControllerContainer)
+                    .append('div').attr('class', 'w-96')
+                    .append('label').text('Select seconds:')
+                    .append("select").attr('id', 'zcc-SelectedEEGSeconds')
+
+                select
+                    .selectAll("option")
+                    .data(events)
+                    .enter()
+                    .append("option")
+                    .attr("value", (d) => d.seconds)
+                    .text((d) => d.label + ": " + d.seconds)
+
+                select
+                    .on('input', e => {
+                        console.log(e.target.value)
+                        drawEEGRawData(e.target.value)
+                        plotEvents(e.target.value)
+                    })
+            }
         }
 
-        let highlightChannel = d3.select(_zccEEGDataControllerContainer).select('select').attr('value')
-        plotEEGData(dataCsv, chNames, highlightChannel);
+        let highlightChannel = document.getElementById('zcc-SelectedEEGSensorName').value;
+        console.log('highlightChannel', highlightChannel)
+        plotEEGData(chNames, highlightChannel);
     });
 };
 
-let plotEEGData = (dataCsv, chNamesFull, highlightChannel) => {
-    let container = _zccEEGDataContainer,
+let plotEEGData = (chNamesFull, highlightChannel) => {
+    let dataCsv = eegDataSegment,
+        container = _zccEEGDataContainer,
         chNames,
+        marks1,
+        marks2,
         plt;
 
     if (highlightChannel !== '--' && chNamesFull.find(d => d === highlightChannel)) {
@@ -93,30 +135,41 @@ let plotEEGData = (dataCsv, chNamesFull, highlightChannel) => {
         chNames = chNamesFull
     }
 
+    marks1 = chNames.map((name) => {
+        let data = dataCsv.map((d) =>
+            Object.assign({}, { name, y: d[name], seconds: d.seconds })
+        ),
+            select = eegSensors.find((d) => d.name === name),
+            color = select ? select.color : "#333333";
+
+        return Plot.line(data, { x: "seconds", y: "y", stroke: color });
+    })
+
+    // console.log(events)
+    if (events) {
+        let selectedEvents = events.filter(d => d.seconds < d3.max(dataCsv, d => d.seconds) && d.seconds > d3.min(dataCsv, d => d.seconds))
+        console.log(selectedEvents)
+        marks2 = selectedEvents.map(d => Plot.ruleX([d.seconds]))
+        marks2.push(Plot.text(selectedEvents, { x: 'seconds', text: 'label', fontSize: 20 }))
+    } else {
+        marks2 = []
+    }
+
     plt = Plot.plot({
         title: chNames,
-        x: { nice: true },
         y: { nice: true },
         height: container.clientWidth * 0.5,
         width: container.clientWidth,
         grid: true,
         color: { nice: true, legend: true, scheme: "Turbo" },
-        marks: chNames.map((name) => {
-            let data = dataCsv.map((d) =>
-                Object.assign({}, { name, y: d[name], seconds: d.seconds })
-            ),
-                select = eegSensors.find((d) => d.name === name),
-                color = select ? select.color : "#333333";
-
-            return Plot.line(data, { x: "seconds", y: "y", stroke: color });
-        }),
+        marks: marks1.concat(marks2),
     });
 
     container.innerHTML = "<div></div>";
     container.replaceChild(plt, container.firstChild);
 };
 
-let drawRawEvents = () => {
+let drawEvents = () => {
     d3.csv(
         `/zcc/getEEGRawEvents.csv?experimentName=${_experimentName}&subjectID=${_subjectID}`
     ).then((eventsCsv) => {
@@ -127,18 +180,21 @@ let drawRawEvents = () => {
                 label: ("00" + d.label).slice(-3),
             })
         );
-        console.log(eventsCsv)
-        plotEvents(eventsCsv);
+        events = eventsCsv
+        plotEvents();
     });
 };
 
-let plotEvents = (eventsCsv) => {
-    let plt;
+let plotEvents = (targetSeconds) => {
+    let eventsCsv = events,
+        container = _zccEventsContainer,
+        plt;
 
     plt = Plot.plot({
-        x: { nice: true },
+        x: { nice: true, domain: d3.extent(eventsCsv, d => d.seconds) },
         y: { nice: true },
-        height: 600,
+        height: container.clientWidth * 0.3,
+        width: container.clientWidth,
         grid: true,
         color: { nice: true, legend: true, scheme: "Turbo", range: [0.2, 1.0] },
         // aspectRatio: 1.0,
@@ -155,11 +211,12 @@ let plotEvents = (eventsCsv) => {
                 fy: "label",
                 text: (d) => parseInt(d.label),
             }),
+            Plot.ruleX([targetSeconds || 0])
         ],
     });
 
-    _zccEventsContainer.innerHTML = "<div></div>";
-    _zccEventsContainer.replaceChild(plt, _zccEventsContainer.firstChild);
+    container.innerHTML = "<div></div>";
+    container.replaceChild(plt, container.firstChild);
 };
 
 /**
@@ -245,7 +302,7 @@ let drawRawMontage = () => {
                     });
                 }
 
-                aparcNodes = appendSpheres(buffer);
+                appendSpheres(buffer);
 
                 d3.json(
                     `/zcc/getEEGRawMontage.json?experimentName=${_experimentName}&subjectID=${_subjectID}`
@@ -285,7 +342,7 @@ let drawRawMontage = () => {
                         });
 
                         eegSensors = sensors;
-                        eegSensorSpheres = appendSpheres(sensors, 0.2);
+                        appendSpheres(sensors, 0.2);
 
                         plotSensorsFlat();
                         drawEEGRawData();
@@ -371,6 +428,7 @@ let appendTexts = (buffer, font) => {
 
         Object.assign(mesh.position, { x, y, z });
         scene.add(mesh);
+        mesh.name = name
         return mesh;
     });
 };
@@ -576,7 +634,7 @@ let mkGeometry = (vertices) => {
     return geometry;
 };
 
-let plotSensorsFlat = () => {
+let plotSensorsFlat = (enlargeSensorName) => {
     let sensors = eegSensors;
 
     let plt,
@@ -592,13 +650,13 @@ let plotSensorsFlat = () => {
         aspectRatio: 1.0,
         marks: [
             // Plot.contour(sensors, { x: d2x, y: d2y, fill: 'v', blur: 4, interval: 0.3, opacity: 0.5 }),
-            Plot.dot(sensors, { x: d2x, y: d2y, fill: "color" }),
+            Plot.dot(sensors, { x: d2x, y: d2y, fill: "color", r: d => enlargeSensorName === d.name ? 3 : 1 }),
             Plot.text(sensors, {
                 x: d2x,
                 y: d2y,
                 fill: "color",
                 text: "name",
-                fontSize: 15,
+                fontSize: d => enlargeSensorName === d.name ? 40 : 15,
                 dx: 10,
                 dy: 10,
             }),
