@@ -62,11 +62,34 @@ class ZccSession(object):
     def idle_secs(self):
         return time.time() - self.time
 
-    def starts_with_raw(self, data_path: Path):
+    def starts_with_raw(self, data_path: Path, subjectID: str):
+        """
+        Starts a session with the specified subject ID and returns the associated EEG data.
+        If the subject ID is already set to the specified value, the existing EEG data is returned.
+        Otherwise, a new session is started with the specified subject ID, and the EEG data is loaded, fixed, and events are retrieved.
+
+        Args:
+            data_path (Path): The path to the EEG data.
+            subjectID (str): The subject ID to associate with the session.
+
+        Returns:
+            ZccEEGRaw: The EEG data associated with the session.
+
+        Raises:
+            None"""
+
+        if self.subjectID == subjectID:
+            LOGGER.debug(f"Session {self.name} is using subjectID {self.subjectID}")
+            return self.eeg_data
+
+        self.subjectID = subjectID
         self.eeg_data = ZccEEGRaw(data_path)
         self.eeg_data.load_raw()
         self.eeg_data.fix_montage()
         self.eeg_data.get_events()
+
+        LOGGER.debug(f"Session {self.name} started with new subjectID {self.subjectID}")
+        return self.eeg_data
 
 
 @singleton

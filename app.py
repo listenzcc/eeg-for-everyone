@@ -23,13 +23,14 @@ Functions:
 # Requirements and constants
 import os
 import json
+import numpy as np
 import pandas as pd
 
 from pathlib import Path
 from rich import print, inspect
 
 from fastapi import Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 
 from util import LOGGER
 from util.experiments import Experiments
@@ -109,7 +110,7 @@ async def start_with_eeg_raw(
     LOGGER.debug(f"Selected subjectID ({subjectID}): {selected}")
 
     # Do something with the session
-    session.starts_with_raw(Path(selected["path"]))
+    session.starts_with_raw(Path(selected["path"]), selected["subjectID"])
 
     # Return the stuff
     selected["path"] = Path(selected["path"]).as_posix()
@@ -182,21 +183,155 @@ async def get_eeg_raw_info(
         reason = f"Invalid eeg data in session: {session}"
         LOGGER.warning(reason)
         res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
 
     raw = eeg_data.raw
     if raw is None:
         reason = f"Invalid raw in session: {session}"
         LOGGER.warning(reason)
         res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
 
     res |= raw.info
 
-    return StreamingResponse(
-        iter(json.dumps(res, default=lambda o: f"{o}")),
+    # return StreamingResponse(
+    #     iter(json.dumps(res, default=lambda o: f"{o}")),
+    #     media_type="text/json",
+    # )
+    return Response(
+        json.dumps(res, default=lambda o: f"{o}"),
         media_type="text/json",
     )
+
+
+@app.get("/zcc/getEEGRawData.csv")
+async def get_eeg_raw_data_csv(
+    request: Request,
+    response_class=StreamingResponse,
+    experimentName: str = "",
+    subjectID: str = "",
+    seconds: float = 0,
+    windowLength: float = 10,
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}")
+
+    res = dict(
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    )
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        reason = f"Invalid eeg data in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=1, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    raw = eeg_data.raw
+    if raw is None:
+        reason = f"Invalid raw in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=2, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    events = eeg_data.events
+    if events is None:
+        reason = f"Invalid events in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=3, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    LOGGER.debug(
+        f"Fetched data center at {seconds} seconds, window length is {windowLength}"
+    )
+
+    # Data size is converted into (time points x channels)
+    data = raw.get_data().transpose()
+    data -= np.mean(data, axis=0)
+    print(np.mean(data, axis=0))
+
+    data_df = pd.DataFrame(data, columns=raw.info["ch_names"])
+    data_df["seconds"] = data_df.index / raw.info["sfreq"]
+    lower = seconds - windowLength / 2
+    upper = seconds + windowLength / 2
+    data_df = data_df.query(f"seconds < {upper}").query(f"seconds > {lower}")
+    print(data_df)
+
+    events_df = pd.DataFrame(events, columns=["samples", "duration", "label"])
+    events_df["seconds"] = events_df["samples"] / raw.info["sfreq"]
+
+    csv = df2csv(data_df)
+    # return StreamingResponse(iter(csv), media_type="text/csv")
+    return Response(csv, media_type="text/csv")
+
+
+@app.get("/zcc/getEEGRawEvents.csv")
+async def get_eeg_raw_events_csv(
+    request: Request,
+    response_class=StreamingResponse,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}")
+
+    res = dict(
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    )
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        reason = f"Invalid eeg data in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=1, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    raw = eeg_data.raw
+    if raw is None:
+        reason = f"Invalid raw in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=2, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    events = eeg_data.events
+    if events is None:
+        reason = f"Invalid events in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=3, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    df = pd.DataFrame(events, columns=["samples", "duration", "label"])
+    df["seconds"] = df["samples"] / raw.info["sfreq"]
+
+    csv = df2csv(df)
+    # return StreamingResponse(iter(csv), media_type="text/csv")
+    return Response(csv, media_type="text/csv")
 
 
 # %% ---- 2023-11-28 ------------------------

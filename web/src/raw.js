@@ -1,34 +1,166 @@
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm'
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm";
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
 
 import * as THREE from "three";
 import Stats from "three/addons/libs/stats.module.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls";
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import normals from 'https://cdn.jsdelivr.net/npm/angle-normals@1.0.0/+esm'
-
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import normals from "https://cdn.jsdelivr.net/npm/angle-normals@1.0.0/+esm";
 
 // Properties and variables
 let colorMap = d3.schemeCategory10,
-    // Parameter from form 
-    _experimentName = document.getElementById('_experimentName').value,
-    _subjectID = document.getElementById('_subjectID').value,
-    // Brain graph containers
-    _zccBrainContainer = document.getElementById('zcc-brainContainer'),
-    _zccEEGGeometryContainer = document.getElementById('zcc-eegGeometryContainer'),
+    // Parameter from form
+    _experimentName = document.getElementById("_experimentName").value,
+    _subjectID = document.getElementById("_subjectID").value,
+    // Graph containers
+    _zccBrainContainer = document.getElementById("zcc-brainContainer"),
+    _zccEEGGeometryContainer = document.getElementById(
+        "zcc-eegGeometryContainer"
+    ),
+    _zccEventsContainer = document.getElementById("zcc-eventsContainer"),
+    _zccEEGDataContainer = document.getElementById("zcc-eegDataContainer"),
+    _zccEEGDataControllerContainer = document.getElementById(
+        "zcc-eegDataControllerContainer"
+    ),
     // rawInfoTable
-    _rawInfoTbody = d3.select('#zcc-rawInfoTbody')
+    _rawInfoTbody = d3.select("#zcc-rawInfoTbody");
 
 // ThreeJS stuff
-let cube, camera, renderer, brainMesh, scene, stats, texts, aparcNodes, eegSensors, eegGeometrySensors;
-
+let cube,
+    camera,
+    renderer,
+    brainMesh,
+    scene,
+    stats,
+    texts,
+    aparcNodes,
+    eegSensorSpheres,
+    eegSensors;
 
 // Main loop
-d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then(raw => {
-    getRawInfo()
-    drawRawMontage()
-})
+d3.json(
+    `/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=${_subjectID}`
+).then((raw) => {
+    getRawInfo();
+    drawRawMontage();
+    drawRawEvents();
+});
+
+let drawEEGRawData = (seconds = 100, windowLength = 1) => {
+    d3.csv(
+        `/zcc/getEEGRawData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&seconds=${seconds}&windowLength=${windowLength}`
+    ).then((dataCsv) => {
+        let chNames = dataCsv.columns.filter((d) => d && d !== "seconds");
+        dataCsv.map((d) => {
+            dataCsv.columns.map((c) => (d[c] = parseFloat(d[c])));
+        });
+        console.log(dataCsv, chNames);
+
+        if (_zccEEGDataControllerContainer.childElementCount === 0) {
+            let select = d3.select(_zccEEGDataControllerContainer)
+                .append("select")
+
+            select
+                .selectAll("option")
+                .data(['--'].concat(chNames))
+                .enter()
+                .append("option")
+                .attr("value", (d) => d)
+                .text((d) => d)
+
+            console.log(select)
+
+            select
+                .on('input', e => {
+                    plotEEGData(dataCsv, chNames, e.target.value)
+                })
+        }
+
+        let highlightChannel = d3.select(_zccEEGDataControllerContainer).select('select').attr('value')
+        plotEEGData(dataCsv, chNames, highlightChannel);
+    });
+};
+
+let plotEEGData = (dataCsv, chNamesFull, highlightChannel) => {
+    let container = _zccEEGDataContainer,
+        chNames,
+        plt;
+
+    if (highlightChannel !== '--' && chNamesFull.find(d => d === highlightChannel)) {
+        chNames = [highlightChannel]
+    } else {
+        chNames = chNamesFull
+    }
+
+    plt = Plot.plot({
+        title: chNames,
+        x: { nice: true },
+        y: { nice: true },
+        height: container.clientWidth * 0.5,
+        width: container.clientWidth,
+        grid: true,
+        color: { nice: true, legend: true, scheme: "Turbo" },
+        marks: chNames.map((name) => {
+            let data = dataCsv.map((d) =>
+                Object.assign({}, { name, y: d[name], seconds: d.seconds })
+            ),
+                select = eegSensors.find((d) => d.name === name),
+                color = select ? select.color : "#333333";
+
+            return Plot.line(data, { x: "seconds", y: "y", stroke: color });
+        }),
+    });
+
+    container.innerHTML = "<div></div>";
+    container.replaceChild(plt, container.firstChild);
+};
+
+let drawRawEvents = () => {
+    d3.csv(
+        `/zcc/getEEGRawEvents.csv?experimentName=${_experimentName}&subjectID=${_subjectID}`
+    ).then((eventsCsv) => {
+        eventsCsv.map((d) =>
+            Object.assign(d, {
+                seconds: parseFloat(d.seconds),
+                samples: parseInt(d.samples),
+                label: ("00" + d.label).slice(-3),
+            })
+        );
+        console.log(eventsCsv)
+        plotEvents(eventsCsv);
+    });
+};
+
+let plotEvents = (eventsCsv) => {
+    let plt;
+
+    plt = Plot.plot({
+        x: { nice: true },
+        y: { nice: true },
+        height: 600,
+        grid: true,
+        color: { nice: true, legend: true, scheme: "Turbo", range: [0.2, 1.0] },
+        // aspectRatio: 1.0,
+        marks: [
+            Plot.dot(eventsCsv, {
+                x: "seconds",
+                fy: "label",
+                r: 7,
+                fill: (d) => parseInt(d.label),
+                tip: true,
+            }),
+            Plot.text(eventsCsv, {
+                x: "seconds",
+                fy: "label",
+                text: (d) => parseInt(d.label),
+            }),
+        ],
+    });
+
+    _zccEventsContainer.innerHTML = "<div></div>";
+    _zccEventsContainer.replaceChild(plt, _zccEventsContainer.firstChild);
+};
 
 /**
  * Retrieves raw information using an HTTP request and updates the DOM with the received data.
@@ -39,163 +171,209 @@ d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=$
  * getRawInfo();
  */
 let getRawInfo = () => {
-    d3.json(`/zcc/getEEGRawInfo.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then(raw => {
-        let array = json2array(raw)
+    d3.json(
+        `/zcc/getEEGRawInfo.json?experimentName=${_experimentName}&subjectID=${_subjectID}`
+    ).then((raw) => {
+        let array = json2array(raw);
 
-        _rawInfoTbody.selectAll('tr').data([]).exit().remove()
-        let tr = _rawInfoTbody.selectAll('tr').data(array).enter().append('tr').attr('class', 'bg-white border-b dark:bg-gray-800 dark:border-gray-700')
-        tr.append('th').text(d => d.name).attr('scope', 'row').attr('class', 'px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white')
-        tr.append('td').text(d => d.value)
-    })
-}
+        _rawInfoTbody.selectAll("tr").data([]).exit().remove();
+        let tr = _rawInfoTbody
+            .selectAll("tr")
+            .data(array)
+            .enter()
+            .append("tr")
+            .attr("class", "bg-white border-b dark:bg-gray-800 dark:border-gray-700");
+        tr.append("th")
+            .text((d) => d.name)
+            .attr("scope", "row")
+            .attr(
+                "class",
+                "px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+            );
+        tr.append("td").text((d) => d.value);
+    });
+};
 
 /**
-* Converts a JSON object into an array of key-value pairs.
-*
-* @param {Object} json - The JSON object to convert.
-* @returns {Array} - An array of objects containing the name and value of each key-value pair in the JSON object.
-*
-* @example
-* const json = { name: "John", age: 30 };
-* const array = json2array(json);
-* console.log(array); // [{ name: "John", value: "\"John\"" }, { name: "age", value: "30" }]
-*/
+ * Converts a JSON object into an array of key-value pairs.
+ *
+ * @param {Object} json - The JSON object to convert.
+ * @returns {Array} - An array of objects containing the name and value of each key-value pair in the JSON object.
+ *
+ * @example
+ * const json = { name: "John", age: 30 };
+ * const array = json2array(json);
+ * console.log(array); // [{ name: "John", value: "\"John\"" }, { name: "age", value: "30" }]
+ */
 let json2array = (json) => {
     let array = [];
-    for (let name in json) array.push({ name, value: JSON.stringify(json[name]) })
-    return array
-}
-
+    for (let name in json)
+        array.push({ name, value: JSON.stringify(json[name]) });
+    return array;
+};
 
 let drawRawMontage = () => {
     // Load glass brain assets
-    d3.csv('/asset/fsaverage/glass-cells.csv').then((cells) => {
-        d3.csv('/asset/fsaverage/glass-vertices.csv').then((vertices) => {
+    d3.csv("/asset/fsaverage/glass-cells.csv").then((cells) => {
+        d3.csv("/asset/fsaverage/glass-vertices.csv").then((vertices) => {
             // Build mesh for the glass brain
-            main(cells, vertices)
+            main(cells, vertices);
 
             // Load aparc node assets
-            d3.json('/asset/fsaverage/aparc.json').then((aparcRaw) => {
-                let name, color, xyz, buffer = [];
+            d3.json("/asset/fsaverage/aparc.json").then((aparcRaw) => {
+                let name,
+                    color,
+                    opacity,
+                    xyz,
+                    buffer = [];
 
                 for (let i in aparcRaw.name) {
-                    name = aparcRaw.name[i]
-                    color = '#aaaaaa'  // aparcRaw.color[i]
-                    xyz = aparcRaw.xyz[i]
+                    name = aparcRaw.name[i];
+                    color = "#ffffff"; // aparcRaw.color[i]
+                    xyz = aparcRaw.xyz[i];
+                    opacity = 0.2;
 
                     // ! The xyz map is correct, x:0, y:2, z:1
-                    buffer.push({ i, name, color, x: meter2centimeter(xyz[0]), y: meter2centimeter(xyz[2]), z: meter2centimeter(xyz[1]) })
+                    buffer.push({
+                        i,
+                        name,
+                        color,
+                        opacity,
+                        x: meter2centimeter(xyz[0]),
+                        y: meter2centimeter(xyz[2]),
+                        z: meter2centimeter(xyz[1]),
+                    });
                 }
 
-                aparcNodes = appendSpheres(buffer)
+                aparcNodes = appendSpheres(buffer);
 
-                d3.json(`/zcc/getEEGRawMontage.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then(montageJson => {
-                    console.log(montageJson)
-                    d3.csv('/asset/montage/sensor.csv').then(sensorCSV => {
-                        let sensors = sensorCSV //.filter(d => montageJson.ch_names.find(e => e === d.name))
+                d3.json(
+                    `/zcc/getEEGRawMontage.json?experimentName=${_experimentName}&subjectID=${_subjectID}`
+                ).then((montageJson) => {
+                    // console.log(montageJson)
+                    d3.csv("/asset/montage/sensor.csv").then((sensorCSV) => {
+                        let sensors = sensorCSV; //.filter(d => montageJson.ch_names.find(e => e === d.name))
 
                         // Fix position x, y, z
-                        sensors.map(d => Object.assign(d, { x: parseFloat(d.x), y: parseFloat(d.z), z: parseFloat(d.y) }))
-                        sensors.map(d => Object.assign(d, { x: meter2centimeter(d.x), y: meter2centimeter(d.y), z: meter2centimeter(d.z) }))
+                        sensors.map((d) =>
+                            Object.assign(d, {
+                                x: parseFloat(d.x),
+                                y: parseFloat(d.z),
+                                z: parseFloat(d.y),
+                            })
+                        );
+                        sensors.map((d) =>
+                            Object.assign(d, {
+                                x: meter2centimeter(d.x),
+                                y: meter2centimeter(d.y),
+                                z: meter2centimeter(d.z),
+                            })
+                        );
 
-                        // Set colors, the invalid sensors' color are set to black
-                        sensors.map((d, i) => Object.assign(d, { i, color: colorMap[i % 10] }))
-                        sensors.map(d => d.color = montageJson.ch_names.find(e => e === d.name) ? d.color : '#000000')
+                        // Set colors, the invalid sensors' color are set to gray
+                        sensors.map((d, i) =>
+                            Object.assign(d, { i, color: colorMap[i % 10] })
+                        );
+                        sensors.map(
+                            (d) =>
+                            (d.color = montageJson.ch_names.find((e) => e === d.name)
+                                ? d.color
+                                : "#333333")
+                        );
+                        sensors.map((sensor) => {
+                            Object.assign(sensor, xyz2polar(sensor));
+                        });
 
-                        sensors.map(sensor => { Object.assign(sensor, xyz2polar(sensor)) })
+                        eegSensors = sensors;
+                        eegSensorSpheres = appendSpheres(sensors, 0.2);
 
-                        console.log(sensors)
-                        plotSensorsGeometry(sensors)
-
-                        eegSensors = appendSpheres(sensors, 0.2)
+                        plotSensorsFlat();
+                        drawEEGRawData();
 
                         let loader = new FontLoader();
 
                         loader.load(
                             // resource URL
-                            'https://unpkg.com/three@0.158.0/examples/fonts/helvetiker_regular.typeface.json',
+                            "https://unpkg.com/three@0.158.0/examples/fonts/helvetiker_regular.typeface.json",
 
                             // onLoad callback
                             function (font) {
                                 // do something with the font
-                                console.log('Loaded font', font);
-                                appendTexts(sensors, font)
+                                console.log("Loaded font", font);
+                                appendTexts(sensors, font);
                             },
 
                             // onProgress callback
                             function (xhr) {
-                                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
                             },
 
                             // onError callback
                             function (err) {
-                                console.log('An error happened');
+                                console.log("An error happened");
                             }
                         );
-                    })
-                })
-            })
-        })
-    })
-}
+                    });
+                });
+            });
+        });
+    });
+};
 
-let getRawMontage = () => {
-    d3.json(`/zcc/getEEGRawMontage.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then(montageJson => {
-        console.log(montageJson)
-        d3.csv('/asset/montage/sensor.csv').then(sensorCsv => {
-            sensorCsv.map(d => Object.assign(d, { x: parseFloat(d.x), y: parseFloat(d.y), z: parseFloat(d.z) }))
-            sensorCsv.map((d, i) => Object.assign(d, { i, color: colorMap[i % 10] }))
-            sensorCsv = sensorCsv.filter(d => montageJson.ch_names.find(e => e === d.name))
-            console.log(sensorCsv)
-        })
-    })
-}
-
-
-let meter2centimeter = d3.scaleLinear().domain([0, 1]).range([0, 100])
+let meter2centimeter = d3.scaleLinear().domain([0, 1]).range([0, 100]);
 
 /**
  * Append spheres to the scene based on the buffer.
  * @param {Array} buffer The buffer of {name, color, x, y, z}
  */
-let appendSpheres = (buffer, size = 0.1, opacity = 1.0, transparent = true, flatShading = true) => {
-
+let appendSpheres = (
+    buffer,
+    size = 0.1,
+    transparent = true,
+    flatShading = true
+) => {
     let geometry, material, mesh;
-    let meshes = buffer.map(({ name, color, x, y, z }) => {
+    let meshes = buffer.map(({ name, color, opacity, x, y, z }) => {
         material = new THREE.MeshPhongMaterial({
-            color, opacity, transparent, flatShading
-        })
-        geometry = new THREE.SphereGeometry(size, 20)
-        mesh = new THREE.Mesh(geometry, material)
+            color,
+            opacity: opacity || 1.0,
+            transparent,
+            flatShading,
+        });
+        geometry = new THREE.SphereGeometry(size, 20);
+        mesh = new THREE.Mesh(geometry, material);
 
-        Object.assign(mesh.position, { x, y, z })
-        return mesh
-    })
+        Object.assign(mesh.position, { x, y, z });
+        return mesh;
+    });
 
-    meshes.map(mesh => {
-        scene.add(mesh)
-    })
+    meshes.map((mesh) => {
+        scene.add(mesh);
+    });
 
-    return meshes
-}
+    return meshes;
+};
 
 let appendTexts = (buffer, font) => {
     let geometry, material, mesh;
     texts = buffer.map(({ name, color, x, y, z }, i) => {
-        geometry = new TextGeometry(name, {
+        (geometry = new TextGeometry(name, {
             font,
             size: 0.6,
             height: 0.1,
-        }),
-            material = new THREE.MeshPhongMaterial({ color, opacity: 0.9, transparent: true }),
-            mesh = new THREE.Mesh(geometry, material);
+        })),
+            (material = new THREE.MeshPhongMaterial({
+                color,
+                opacity: 0.9,
+                transparent: true,
+            })),
+            (mesh = new THREE.Mesh(geometry, material));
 
-        Object.assign(mesh.position, { x, y, z })
-        scene.add(mesh)
-        return mesh
-    })
-}
-
+        Object.assign(mesh.position, { x, y, z });
+        scene.add(mesh);
+        return mesh;
+    });
+};
 
 let main = (cells, vertices) => {
     let brainModel = mkBrainModel(cells, vertices),
@@ -208,39 +386,41 @@ let main = (cells, vertices) => {
     scene.add(brainMesh);
 
     stats = new Stats();
-    Object.assign(stats.dom.style, { position: 'relative' });
+    Object.assign(stats.dom.style, { position: "relative" });
+    _zccBrainContainer.innerHTML = "";
     // _zccBrainContainer.appendChild(stats.dom);
-    _zccBrainContainer.appendChild(renderer.domElement)
+    _zccBrainContainer.appendChild(renderer.domElement);
 
     let render = () => {
         if (texts) {
-            texts.map(text => { text ? text.lookAt(camera.position) : false })
+            texts.map((text) => {
+                text ? text.lookAt(camera.position) : false;
+            });
         }
-        renderer.render(scene, camera)
-    }
-
+        renderer.render(scene, camera);
+    };
 
     let animate = () => {
         cube.rotation.z += 0.01;
         cube.rotation.y += 0.01;
 
-        render()
+        render();
 
-        stats.update()
+        stats.update();
 
-        requestAnimationFrame(animate)
-    }
-    animate()
+        requestAnimationFrame(animate);
+    };
+    animate();
 
     window.addEventListener("resize", onWindowResize);
     onWindowResize();
-}
+};
 
 let getContainerSize = () => {
     const w = _zccBrainContainer.clientWidth,
         h = _zccBrainContainer.clientWidth;
-    return { w, h }
-}
+    return { w, h };
+};
 
 let onWindowResize = () => {
     const { w, h } = getContainerSize();
@@ -254,7 +434,7 @@ let onWindowResize = () => {
     camera.aspect = w / h;
 
     camera.updateProjectionMatrix();
-}
+};
 
 let init = () => {
     {
@@ -278,7 +458,7 @@ let init = () => {
     }
 
     {
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         let { w, h } = getContainerSize(),
             controls = new OrbitControls(camera, renderer.domElement);
         renderer.setSize(w, h);
@@ -289,6 +469,7 @@ let init = () => {
     {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x001b42);
+        scene.background = new THREE.Color(0xf3f4f6);
         // scene.add(cube);
 
         let color = 0xffffff,
@@ -301,10 +482,8 @@ let init = () => {
             helper = new THREE.GridHelper(size, divisions, 0xa4cab6, 0x7a7374);
         helper.position.y = -10;
         // scene.add(helper);
-
     }
-}
-
+};
 
 let mkBrainMesh = (brainGeometry) => {
     let material = new THREE.MeshPhongMaterial({
@@ -312,11 +491,10 @@ let mkBrainMesh = (brainGeometry) => {
         opacity: 0.1,
         transparent: true,
         depthWrite: false,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
     });
     return new THREE.Mesh(brainGeometry, material);
-}
-
+};
 
 let mkBrainModel = (cells, vertices) => {
     let scaler = 0.19;
@@ -324,19 +502,19 @@ let mkBrainModel = (cells, vertices) => {
     const _cells = cells.map((e) => [
         parseInt(e.v2),
         parseInt(e.v1),
-        parseInt(e.v0)
+        parseInt(e.v0),
     ]);
 
     const positions = vertices.map((e) => [
         parseFloat(e.z * scaler - 8.5),
         parseFloat(e.x * scaler - 6.8),
-        parseFloat(e.y * scaler - 12)
+        parseFloat(e.y * scaler - 12),
     ]);
 
     const colors = cells.map(() => [0.4, 0.4, 0.4, 0.5]);
 
     return { cells: _cells, positions, colors };
-}
+};
 
 let mkVertices = (meshModel) => {
     const vertices = [];
@@ -346,7 +524,7 @@ let mkVertices = (meshModel) => {
         uv3 = [
             [0, 0],
             [0, 1],
-            [1, 0]
+            [1, 0],
         ];
 
     let pos, norm, uv;
@@ -360,7 +538,7 @@ let mkVertices = (meshModel) => {
     }
 
     return vertices;
-}
+};
 
 let mkGeometry = (vertices) => {
     const geometry = new THREE.BufferGeometry();
@@ -396,9 +574,10 @@ let mkGeometry = (vertices) => {
     geometry.setAttribute("uv", uvAttr);
 
     return geometry;
-}
+};
 
-let plotSensorsGeometry = (sensors) => {
+let plotSensorsFlat = () => {
+    let sensors = eegSensors;
 
     let plt,
         d2x = (d) => d.theta * Math.cos(d.phi),
@@ -409,23 +588,52 @@ let plotSensorsGeometry = (sensors) => {
         y: { nice: true },
         width: 600,
         grid: true,
-        color: { nice: true, legend: true, scheme: 'RdBu', reverse: true },
+        color: { nice: true, legend: true, scheme: "RdBu", reverse: true },
         aspectRatio: 1.0,
         marks: [
             // Plot.contour(sensors, { x: d2x, y: d2y, fill: 'v', blur: 4, interval: 0.3, opacity: 0.5 }),
-            Plot.dot(sensors, { x: d2x, y: d2y, fill: 'color' }),
-            Plot.text(sensors, { x: d2x, y: d2y, fill: 'color', text: 'name', fontSize: 15, dx: 10, dy: 10 }),
+            Plot.dot(sensors, { x: d2x, y: d2y, fill: "color" }),
+            Plot.text(sensors, {
+                x: d2x,
+                y: d2y,
+                fill: "color",
+                text: "name",
+                fontSize: 15,
+                dx: 10,
+                dy: 10,
+            }),
         ],
-    })
+    });
 
-    _zccEEGGeometryContainer.replaceChild(plt, _zccEEGGeometryContainer.firstChild)
-}
+    _zccEEGGeometryContainer.innerHTML = "<div></div>";
+    _zccEEGGeometryContainer.replaceChild(
+        plt,
+        _zccEEGGeometryContainer.firstChild
+    );
+};
 
+/**
+ * Converts Cartesian coordinates (x, y, z) to polar coordinates (radius, theta, phi).
+ *
+ * @param {Object} obj - The object containing the Cartesian coordinates.
+ * @param {number} obj.x - The x-coordinate.
+ * @param {number} obj.y - The y-coordinate.
+ * @param {number} obj.z - The z-coordinate.
+ * @returns {Object} - The object containing the polar coordinates.
+ * @property {number} radius - The radial distance from the origin.
+ * @property {number} theta - The inclination angle from the positive y-axis.
+ * @property {number} phi - The azimuthal angle from the positive x-axis.
+ *
+ * @example
+ * const cartesian = { x: 1, y: 2, z: 3 };
+ * const polar = xyz2polar(cartesian);
+ * console.log(polar); // { radius: 3.7416573867739413, theta: 1.1071487177940904, phi: 1.2490457723982544 }
+ */
 let xyz2polar = (obj) => {
     let { x, y, z } = obj,
         radius = Math.sqrt(x * x + y * y + z * z),
         theta = Math.acos(y / radius),
         phi = Math.atan2(z, x);
 
-    return { radius, theta, phi }
-}
+    return { radius, theta, phi };
+};
