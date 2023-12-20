@@ -30,7 +30,7 @@ from pathlib import Path
 from rich import print, inspect
 
 from fastapi import Request
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, FileResponse, Response
 
 from util import LOGGER
 from util.experiments import Experiments
@@ -43,6 +43,11 @@ from route.app import app, check_user_name
 # Function and class
 experiments = Experiments()
 zss = ZccSessionSystem()
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(Path("asset/favicon.ico"))
 
 
 @app.get("/zcc/getExperiments.csv")
@@ -97,7 +102,9 @@ async def start_with_eeg_raw(
     if len(df) == 0:
         LOGGER.error(f"Not found subjectID: {subjectID}")
         res = dict(params, fail="Not found subjectID")
-        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
 
     # Found multiple data
     if len(df) > 1:

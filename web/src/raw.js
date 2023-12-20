@@ -23,6 +23,7 @@ let colorMap = d3.schemeCategory10,
     _zccEEGDataControllerContainer = document.getElementById(
         "zcc-eegDataControllerContainer"
     ),
+    _zccStartAnalysisContainer = document.getElementById('zcc-startAnalysisContainer'),
     // rawInfoTable
     _rawInfoTbody = d3.select("#zcc-rawInfoTbody");
 
@@ -41,11 +42,13 @@ let cube,
 
 // Start analysis
 d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=${_subjectID}`).then((startAnalysis) => {
-    console.log(startAnalysis)
+    console.log('Start analysis:', startAnalysis)
     getRawInfo();
     drawRawMontage();
     drawEvents();
+    _zccStartAnalysisContainer.style.display = 'block'
 })
+
 
 
 let drawEEGRawData = (seconds = 100, windowLength = 3) => {
@@ -60,7 +63,8 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
         dataCsv.map((d) => {
             dataCsv.columns.map((c) => (d[c] = parseFloat(d[c])));
         });
-        console.log(dataCsv, chNames);
+        console.log('Got eeg data:', dataCsv)
+        console.log('Sensor names:', chNames)
         eegDataSegment = dataCsv;
 
         if (_zccEEGDataControllerContainer.childElementCount === 0) {
@@ -83,12 +87,11 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
                         let name = e.target.value
                         plotEEGData(chNames, name)
                         plotSensorsFlat(name)
-                        // drawEEGRawData()
-                        console.log(texts)
+                        console.log('Re-plot the eeg data by sensor name:', name)
                         texts.map(text => {
-                            console.log(text.name, name);
                             text.name === name ? Object.assign(text.scale, { x: 3, y: 3, z: 3 }) : Object.assign(text.scale, { x: 1, y: 1, z: 1 })
                         })
+                        console.log('Enlarged sensor by sensor name:', name)
                     })
             }
 
@@ -108,15 +111,19 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
 
                 select
                     .on('input', e => {
-                        console.log(e.target.value)
-                        drawEEGRawData(e.target.value)
-                        plotEvents(e.target.value)
+                        let seconds = e.target.value
+
+                        // Request eeg data since the center second is changed.
+                        drawEEGRawData(seconds)
+
+                        plotEvents(seconds)
+                        console.log('Position to seconds:', seconds)
                     })
             }
         }
 
         let highlightChannel = document.getElementById('zcc-SelectedEEGSensorName').value;
-        console.log('highlightChannel', highlightChannel)
+        console.log('Highlight sensor by name: ', highlightChannel)
         plotEEGData(chNames, highlightChannel);
     });
 };
@@ -148,7 +155,7 @@ let plotEEGData = (chNamesFull, highlightChannel) => {
     // console.log(events)
     if (events) {
         let selectedEvents = events.filter(d => d.seconds < d3.max(dataCsv, d => d.seconds) && d.seconds > d3.min(dataCsv, d => d.seconds))
-        console.log(selectedEvents)
+        console.log('Found events inside eeg data time range:', selectedEvents)
         marks2 = selectedEvents.map(d => Plot.ruleX([d.seconds]))
         marks2.push(Plot.text(selectedEvents, { x: 'seconds', text: 'label', fontSize: 20 }))
     } else {
@@ -362,12 +369,12 @@ let drawRawMontage = () => {
 
                             // onProgress callback
                             function (xhr) {
-                                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+                                console.log('Font onProgress:', (xhr.loaded / xhr.total) * 100 + "% loaded");
                             },
 
                             // onError callback
                             function (err) {
-                                console.log("An error happened");
+                                console.error("Loaded font failed");
                             }
                         );
                     });

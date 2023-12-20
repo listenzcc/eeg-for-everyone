@@ -2,11 +2,8 @@
 <html lang="en" class="h-full bg-gray-100">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/static/css/style.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <!-- <script src="/src/hello.js"></script> -->
+
+    {% include 'components/global-head.html'%}
 
     <script type="importmap">
     {
@@ -20,26 +17,30 @@
 </head>
 
 <body class="h-full">
-    <!-- <script>
-        whoAmI()
-    </script> -->
 
     <div class="min-h-full min-w-[6in]">
         {% include 'components/header-bar.html' %}
 
         <!-- Content -->
-        <section class="py-10">
+        <section class="py-20">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <!-- Welcome slogan -->
                 {% include 'components/raw-data-card.html' %}
-                <!-- <div class="mx-auto max-w-2xl lg:mx-0">
-                    <h2 class="font-display text-4xl font-medium tracking-tighter text-blue-600 sm:text-5xl">
-                        <p>Who am I: {{username}}</p>
-                    </h2>
-                    <p class="mt-4 font-display text-2xl tracking-tight text-blue-900">You are using
-                        EEG data({{experimentName}}): {{subjectID}}
-                    </p>
-                </div> -->
+
+                <div id="zcc-startAnalysisContainer" style="display: none">
+                    <div class="w-full flex justify-center h-14 py-3">
+                        <button class="rounded-full text-gray-200 font-bold bg-blue-900 w-96 h-10">
+                            <a href="/template/setup.html?experimentName={{experimentName}}&subjectID={{subjectID}}">
+                                <span>Start Analysis</span>
+                            </a>
+                        </button>
+                        <span class="relative flex h-4 w-4">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-900 opacity-90"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-900"></span>
+                        </span>
+                    </div>
+                </div>
 
                 <!-- Brain graph -->
                 <div class="flex">
