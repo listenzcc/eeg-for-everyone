@@ -1,0 +1,47 @@
+<!-- Filter part for setup page -->
+<div class="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
+    {% for txt, id in [
+    ['Lower freq. (Hz)','zcc-lFreq'],
+    ['Upper freq. (Hz)','zcc-hFreq'],
+    ['Down sampling. (pnt)', 'zcc-downSampling']
+    ] %}
+    <div class="group relative z-0 transition-all focus-within:z-10">
+        <input id="{{id}}" autocomplete="" placeholder=" "
+            class="peer block w-full border border-neutral-300 bg-transparent px-6 pb-4 pt-12 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5 group-first:rounded-t-2xl group-last:rounded-b-2xl"
+            type="number" name="" data-listener-added_e1d6344f="true" />
+        <label for="{{id}}"
+            class="pointer-events-none absolute left-6 top-1/2 -mt-3 origin-left text-base/6 text-neutral-500 transition-all duration-200 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:font-semibold peer-focus:text-neutral-950 peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:font-semibold peer-[:not(:placeholder-shown)]:text-neutral-950">
+            <span>{{txt}}</span>
+        </label>
+    </div>
+    {% endfor %}
+
+    <div class="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
+        <fieldset>
+            <legend class="text-base/6 text-neutral-500">Known bands</legend>
+            <div class="mt-6 grid grid-cols-1 gap-8">
+                {% for name, id, band, lower, upper in [
+                ['Wide', 'zcc-wideBand', '0.1 - 50.0 Hz', 0.1, 50],
+                ['Delta', 'zcc-deltaBand', '0.1 - 4.0 Hz', 0.1, 4],
+                ['Theta', 'zcc-thetaBand', '4.0 - 7.0 Hz', 4, 7],
+                ['Alpha', 'zcc-alphaBand', '8.0 - 12.0 Hz', 8, 12],
+                ['Beta', 'zcc-betaBand', '13.0 - 30.0 Hz', 13, 30],
+                ['Gamma', 'zcc-gammaBand', '30.0 - 50.0 Hz', 30, 50],
+                ]%}
+
+                <label class="flex gap-x-3">
+                    <input id="{{id}}"
+                        class="h-6 w-6 flex-none appearance-none rounded-full border border-neutral-950/20 outline-none checked:border-[0.5rem] checked:border-neutral-950 focus-visible:ring-1 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+                        type="radio" value="25" name="budget" data-listener-added_e1d6344f="true" onchange="
+                        document.getElementById('zcc-lFreq').value = {{lower}};
+                        document.getElementById('zcc-hFreq').value = {{upper}};
+                        " />
+                    <span class="text-base/6 text-neutral-950">{{name}}: {{band}}</span>
+                </label>
+
+                {% endfor %}
+
+            </div>
+        </fieldset>
+    </div>
+</div>

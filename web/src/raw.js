@@ -23,9 +23,30 @@ let colorMap = d3.schemeCategory10,
     _zccEEGDataControllerContainer = document.getElementById(
         "zcc-eegDataControllerContainer"
     ),
-    _zccStartAnalysisContainer = document.getElementById('zcc-startAnalysisContainer'),
+    _zccStartSetupContainer = document.getElementById('zcc-startSetupContainer'),
     // rawInfoTable
     _rawInfoTbody = d3.select("#zcc-rawInfoTbody");
+
+let everythingIsFine = {
+    info: false,
+    montage: false,
+    events: false,
+    data: false
+}
+
+let checkEverythingIsFine = () => {
+    let allPassed = true;
+    for (const key in everythingIsFine) {
+        if (Object.hasOwnProperty.call(everythingIsFine, key) && !everythingIsFine[key]) {
+            allPassed = false;
+            console.warn('Not ready:', key)
+        }
+    }
+    if (allPassed) {
+        _zccStartSetupContainer.style.display = 'block'
+        console.log('Everything is fine:', everythingIsFine)
+    }
+}
 
 // ThreeJS stuff
 let cube,
@@ -46,7 +67,6 @@ d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=$
     getRawInfo();
     drawRawMontage();
     drawEvents();
-    _zccStartAnalysisContainer.style.display = 'block'
 })
 
 
@@ -125,6 +145,9 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
         let highlightChannel = document.getElementById('zcc-SelectedEEGSensorName').value;
         console.log('Highlight sensor by name: ', highlightChannel)
         plotEEGData(chNames, highlightChannel);
+
+        everythingIsFine.data = true
+        checkEverythingIsFine()
     });
 };
 
@@ -189,6 +212,8 @@ let drawEvents = () => {
         );
         events = eventsCsv
         plotEvents();
+        everythingIsFine.events = true
+        checkEverythingIsFine()
     });
 };
 
@@ -255,6 +280,9 @@ let getRawInfo = () => {
                 "px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
             );
         tr.append("td").text((d) => d.value);
+
+        everythingIsFine.info = true
+        checkEverythingIsFine()
     });
 };
 
@@ -353,6 +381,9 @@ let drawRawMontage = () => {
 
                         plotSensorsFlat();
                         drawEEGRawData();
+
+                        everythingIsFine.montage = true
+                        checkEverythingIsFine()
 
                         let loader = new FontLoader();
 

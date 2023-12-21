@@ -10,17 +10,83 @@
     <div class="min-h-full min-w-[6in]">
         {% include 'components/header-bar.html' %}
 
+        {% include 'components/raw-data-card.html' %}
+
         <!-- Content -->
         <section class="py-20">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                Event toggles
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="" id="zcc-eventTogglesContainer">
-                    </div>
-                    <div class="col-span-2" id="zcc-eventsPlotContainer">
+            {% with
+            id="zcc-startAnalysisContainer",
+            txt='Goto Analysis',
+            href="/template/analysis.html?experimentName="+experimentName+"&subjectID="+subjectID
+            %}
+            {% include 'components/goto-next-step-button.html' %}
+            {% endwith %}
+
+            <!-- Events setup -->
+            <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+                <div class="relative border border-gray-200 rounded-lg shadow-inner ">
+
+                    {% with id="zcc-eventsSetupButton", txt="Events pending"%}
+                    {% include 'components/setup-toggle-button.html' %}
+                    {% endwith %}
+
+                    <div id="zcc-eventsSetupContainer"
+                        class="grid grid-cols-3 gap-4 transition duration-100 ease-in-out">
+                        <div>
+                            <div class="px-12">
+                                <label class="relative inline-flex items-center cursor-pointer ">
+                                    <input id="zcc-eventsSwitchAllToggle" type="checkbox" class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600">
+                                    </div>
+                                    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                        Toggle all events
+                                    </span>
+                                </label>
+                            </div>
+                            <div id="zcc-eventTogglesContainer" class="max-h-96 overflow-auto">
+                            </div>
+                        </div>
+                        <div class="col-span-2" id="zcc-eventsPlotContainer">
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Filter setup -->
+            <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="relative border border-gray-200 rounded-lg shadow-inner ">
+
+                    {% with id="zcc-filterSetupButton", txt="Filter pending"%}
+                    {% include 'components/setup-toggle-button.html' %}
+                    {% endwith %}
+
+                    <div id="zcc-filterSetupContainer"
+                        class="grid grid-cols-3 gap-4 transition duration-100 ease-in-out">
+                        <div id="zcc-filterParameterContainer">
+                            {% include 'components/setup-filter.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crop setup -->
+            <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="relative border border-gray-200 rounded-lg shadow-inner ">
+
+                    {% with id="zcc-cropSetupButton", txt="Crop pending"%}
+                    {% include 'components/setup-toggle-button.html' %}
+                    {% endwith %}
+
+                    <div id="zcc-cropSetupContainer" class="grid grid-cols-3 gap-4 transition duration-100 ease-in-out">
+                        <div id="zcc-cropParameterContainer">
+                            {% include 'components/setup-crop.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         {% include "components/footer-bar.html" %}
@@ -39,6 +105,7 @@
             <script type="module" src="/src/setup.js">
             </script>
         </section>
+
     </div>
 </body>
 
