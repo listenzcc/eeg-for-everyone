@@ -1,11 +1,27 @@
 <!-- The button directing to the next step -->
-<div id="{{id}}" style="display: none">
+<!-- <div id="{{id}}" style="display: none">
     <div class="w-full flex justify-center h-14 py-3">
         <button class="rounded-full text-gray-200 font-bold bg-blue-900 w-96 h-10">
             <a href="{{href}}">
                 <span>{{txt}}</span>
             </a>
         </button>
+        <span class="relative flex h-4 w-4">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-900 opacity-90"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-900"></span>
+        </span>
+    </div>
+</div> -->
+
+<div id="{{id}}" style="display: none">
+    <div class="w-full flex justify-center h-14 py-3">
+        <form action="{{href}}" method="post">
+            <button type="submit" class="rounded-full text-gray-200 font-bold bg-blue-900 w-96 h-10">
+                <span>{{txt}}</span>
+            </button>
+            <input type="hidden" name="name1" value="value1" />
+            <input type="hidden" name="name2" value="value2" />
+        </form>
         <span class="relative flex h-4 w-4">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-900 opacity-90"></span>
             <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-900"></span>

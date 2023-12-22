@@ -29,8 +29,13 @@ import pandas as pd
 from pathlib import Path
 from rich import print, inspect
 
-from fastapi import Request
-from fastapi.responses import StreamingResponse, FileResponse, Response
+from fastapi import Request, Form, status
+from fastapi.responses import (
+    StreamingResponse,
+    FileResponse,
+    Response,
+    RedirectResponse,
+)
 
 from util import LOGGER
 from util.experiments import Experiments
@@ -51,9 +56,7 @@ async def favicon():
 
 
 @app.get("/zcc/getExperiments.csv")
-async def get_experiments_csv(
-    request: Request, response_class=StreamingResponse, experimentName: str = ""
-):
+async def get_experiments_csv(request: Request):
     username = check_user_name(request)
     LOGGER.debug(f"Checked username: {username}")
     df = experiments.to_df()
@@ -82,7 +85,6 @@ async def get_data_files_csv(
 @app.get("/zcc/startWithEEGRaw.json")
 async def start_with_eeg_raw(
     request: Request,
-    response_class=StreamingResponse,
     experimentName: str = "",
     subjectID: str = "",
 ):
@@ -126,7 +128,6 @@ async def start_with_eeg_raw(
 @app.get("/zcc/getEEGRawMontage.json")
 async def get_eeg_montage_info(
     request: Request,
-    response_class=StreamingResponse,
     experimentName: str = "",
     subjectID: str = "",
 ):
@@ -167,7 +168,6 @@ async def get_eeg_montage_info(
 @app.get("/zcc/getEEGRawInfo.json")
 async def get_eeg_raw_info(
     request: Request,
-    response_class=StreamingResponse,
     experimentName: str = "",
     subjectID: str = "",
 ):
@@ -216,7 +216,6 @@ async def get_eeg_raw_info(
 @app.get("/zcc/getEEGRawData.csv")
 async def get_eeg_raw_data_csv(
     request: Request,
-    response_class=StreamingResponse,
     experimentName: str = "",
     subjectID: str = "",
     seconds: float = 0,
@@ -286,7 +285,6 @@ async def get_eeg_raw_data_csv(
 @app.get("/zcc/getEEGRawEvents.csv")
 async def get_eeg_raw_events_csv(
     request: Request,
-    response_class=StreamingResponse,
     experimentName: str = "",
     subjectID: str = "",
 ):
@@ -335,6 +333,86 @@ async def get_eeg_raw_events_csv(
     csv = df2csv(df)
     # return StreamingResponse(iter(csv), media_type="text/csv")
     return Response(csv, media_type="text/csv")
+
+
+@app.post("/template/setup.html", response_class=RedirectResponse)
+async def post_template_setup_html(
+    request: Request,
+    defaultName: str = Form(
+        default="defaultDefaultNameValue"
+    ),  # Parse the posted params
+    name1: str = Form(default="defaultName1Value"),  # Parse the posted params
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+
+    # Make sure the session is using the same EEG data
+    if session.subjectID != subjectID:
+        sol = dict(
+            subjectID=subjectID,
+            msg=f"Not found subjectID: {subjectID}, current subjectID is {session.subjectID}",
+            whatToDo="Press the 'Raw' tab on the header bar to reload the subjectID data",
+        )
+        LOGGER.warning(f"Can not process setup request, giving solution: {sol}")
+        return Response(
+            json.dumps(sol),
+            media_type="text/json",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    return RedirectResponse(
+        url=f"/template/setup.html?experimentName={experimentName}&subjectID={subjectID}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@app.post("/template/analysis.html", response_class=RedirectResponse)
+async def post_template_analysis_html(
+    request: Request,
+    experimentName: str = "",
+    subjectID: str = "",
+    events: str = Form(),
+    filter: str = Form(),
+    crop: str = Form(),
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+
+    # Make sure the session is using the same EEG data
+    if session.subjectID != subjectID:
+        sol = dict(
+            subjectID=subjectID,
+            msg=f"Not found subjectID: {subjectID}, current subjectID is {session.subjectID}",
+            whatToDo="Press the 'Raw' tab on the header bar to reload the subjectID data",
+        )
+        LOGGER.warning(f"Can not process setup request, giving solution: {sol}")
+        return Response(
+            json.dumps(sol),
+            media_type="text/json",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    setup = dict(
+        events=json.loads(events)["value"],
+        filter=json.loads(filter)["value"],
+        crop=json.loads(crop)["value"],
+    )
+    LOGGER.debug(f"Received setup: {setup}")
+
+    print(setup["events"])
+    print(setup["filter"])
+    print(setup["crop"])
+
+    return RedirectResponse(
+        url=f"/template/analysis.html?experimentName={experimentName}&subjectID={subjectID}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
 
 
 # %% ---- 2023-11-28 ------------------------

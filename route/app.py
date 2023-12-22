@@ -238,8 +238,7 @@ async def index(
         return templates.TemplateResponse("login.html", {"request": request})
 
     return templates.TemplateResponse(
-        template_name,
-        dict(params, request=request, username=username),
+        template_name, dict(params, request=request, username=username)
     )
 
 

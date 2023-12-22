@@ -13,18 +13,36 @@ let setup = {
 let checkSetups = () => {
     console.log('Current setup:', setup)
 
-    let passed = true
+    let passed = true,
+        data = [];
 
     for (const name in setup) {
         if (Object.hasOwnProperty.call(setup, name) && setup[name].status !== 'finished') {
+            // Some setup is not ready
             passed = false
             console.warn('Invalid setup:', name)
+        } else {
+            // The setup is ready
+            data.push({ name, value: JSON.stringify(setup[name]) })
         }
     }
 
     if (passed) {
-        document.getElementById('zcc-startAnalysisContainer').style = ''
-        console.log('All setup finished', setup)
+        let dom = document.getElementById('zcc-startAnalysisContainer')
+        dom.style = ''
+
+        // Remove all the current inputs
+        let form = d3.select(dom).select('form')
+        form.selectAll('input').data([]).exit().remove()
+        form.selectAll('input')
+            .data(data)
+            .enter()
+            .append('input')
+            .attr('type', 'hidden')
+            .attr('name', d => d.name)
+            .attr('value', d => d.value)
+
+        console.log('All setup finished', setup, data)
     } else {
         document.getElementById('zcc-startAnalysisContainer').style = 'display: none'
     }
