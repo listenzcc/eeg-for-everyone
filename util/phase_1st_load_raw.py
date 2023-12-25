@@ -114,11 +114,20 @@ class ZccEEGRaw(object):
             for n in raw.info.ch_names:
                 mapping[n] = n.upper()
             raw.rename_channels(mapping)
+
             LOGGER.debug(f"Loaded {raw}")
             return raw
 
         try:
             self.raw = _load_raw(self.path)
+
+            # Reset following objects since the raw is loaded
+            self.montage = None
+            self.events = None
+            self.event_id = None
+            self.epochs = None
+            self.evoked = None
+
         except Exception as err:
             LOGGER.error(f"Failed to load raw ({self.path}): {err}")
             eb.on_error(err)

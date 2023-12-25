@@ -23,6 +23,7 @@ Functions:
 # Requirements and constants
 import os
 import json
+import traceback
 import numpy as np
 import pandas as pd
 
@@ -335,6 +336,103 @@ async def get_eeg_raw_events_csv(
     return Response(csv, media_type="text/csv")
 
 
+@app.get("/zcc/getEEGEpochsEvents.csv")
+async def get_eeg_epochs_events_csv(
+    request: Request,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}")
+
+    res = dict(
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    )
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        reason = f"Invalid eeg data in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=1, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    epochs = eeg_data.epochs
+    if epochs is None:
+        reason = f"Invalid raw in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=2, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    df = pd.DataFrame(epochs.events, columns=["Timestamp", "Duration", "Event"])
+    csv = df2csv(df)
+
+    return Response(csv, media_type="text/csv")
+
+
+@app.get("/zcc/getEEGEvokedData.csv")
+async def get_eeg_evoked_data_csv(
+    request: Request,
+    event: int = 0,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}")
+
+    res = dict(
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    )
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        reason = f"Invalid eeg data in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=1, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    epochs = eeg_data.epochs
+    if epochs is None:
+        reason = f"Invalid raw in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=2, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    try:
+        evoked = epochs[f"{event}"].average()
+        # Data shape is (timepoints x channels)
+        data = evoked.get_data().transpose()
+
+        df = pd.DataFrame(data, columns=epochs.ch_names)
+        df["_times"] = epochs.times
+        print(df)
+        csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
+
+    except Exception as err:
+        res |= dict(_successFlag=3, _failReason=traceback.format_exc())
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+
 @app.post("/template/setup.html", response_class=RedirectResponse)
 async def post_template_setup_html(
     request: Request,
@@ -405,9 +503,20 @@ async def post_template_analysis_html(
     )
     LOGGER.debug(f"Received setup: {setup}")
 
-    print(setup["events"])
-    print(setup["filter"])
-    print(setup["crop"])
+    try:
+        events = [e["num"] for e in setup["events"]]
+        tmin = setup["crop"]["tMin"]
+        tmax = setup["crop"]["tMax"]
+        l_freq = setup["filter"]["lFreq"]
+        h_freq = setup["filter"]["hFreq"]
+        decim = setup["filter"]["downSampling"]
+        session.collect_epochs(events, tmin, tmax, l_freq, h_freq, decim)
+
+    except Exception as err:
+        return Response(
+            json.dumps(dict(err=f"{err}", traceback=traceback.format_exc())),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
     return RedirectResponse(
         url=f"/template/analysis.html?experimentName={experimentName}&subjectID={subjectID}",

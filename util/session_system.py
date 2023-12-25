@@ -21,11 +21,14 @@ Functions:
 import time
 import pandas as pd
 
+from rich import print, inspect
 from pathlib import Path
+from threading import Thread
 
 from . import LOGGER, singleton
 from .file_system import ZccFileSystem
 from .phase_1st_load_raw import ZccEEGRaw
+from .phase_2nd_collect_epochs import ZccEEGEpochs
 
 
 # %% ---- 2023-12-05 ------------------------
@@ -83,13 +86,44 @@ class ZccSession(object):
             return self.eeg_data
 
         self.subjectID = subjectID
-        self.eeg_data = ZccEEGRaw(data_path)
+        # self.eeg_data = ZccEEGRaw(data_path)
+        self.eeg_data = ZccEEGEpochs(data_path)
         self.eeg_data.load_raw()
         self.eeg_data.fix_montage()
         self.eeg_data.get_events()
 
         LOGGER.debug(f"Session {self.name} started with new subjectID {self.subjectID}")
         return self.eeg_data
+
+    def collect_epochs(self, events, tmin, tmax, l_freq, h_freq, decim):
+        """
+        Collects epochs based on the provided events and parameters asynchronously.
+
+        Args:
+            events (list): The list of events.
+            tmin (float): The minimum time value.
+            tmax (float): The maximum time value.
+            l_freq (float): The low frequency value.
+            h_freq (float): The high frequency value.
+            decim (int): The decimation value.
+
+        Returns:
+            None
+
+        Raises:
+            None"""
+
+        def _collect_epochs():
+            epochs = self.eeg_data.collect_epochs(
+                events, tmin, tmax, l_freq, h_freq, decim
+            )
+
+            LOGGER.debug(
+                f"Session {self.name} collected epochs for subjectID {self.subjectID}, {epochs}"
+            )
+
+        Thread(target=_collect_epochs, daemon=True).start()
+        return
 
 
 @singleton
