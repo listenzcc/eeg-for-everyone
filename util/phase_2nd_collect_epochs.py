@@ -38,6 +38,10 @@ class ZccEEGEpochs(ZccEEGRaw):
         super(ZccEEGEpochs, self).__init__(path)
 
     def collect_epochs(self, events, tmin, tmax, l_freq, h_freq, decim):
+        # Reset following objects since the new epochs are loading
+        self.epochs = None
+        self.evoked = None
+
         assert self.raw is not None, "Failed collect_epochs, since raw is invalid."
 
         # Convert events from array of N numbers into shape (N, 3) events record
@@ -59,8 +63,6 @@ class ZccEEGEpochs(ZccEEGRaw):
         epochs.decimate(decim, verbose=True)
 
         self.epochs = epochs
-        # Reset following objects since the epochs are loaded
-        self.evoked = None
 
         LOGGER.debug(f"Collected epochs: {epochs}")
 

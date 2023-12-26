@@ -119,14 +119,15 @@ class ZccEEGRaw(object):
             return raw
 
         try:
-            self.raw = _load_raw(self.path)
-
-            # Reset following objects since the raw is loaded
+            # Reset following objects since the raw is loading
+            self.raw = None
             self.montage = None
             self.events = None
             self.event_id = None
             self.epochs = None
             self.evoked = None
+
+            self.raw = _load_raw(self.path)
 
         except Exception as err:
             LOGGER.error(f"Failed to load raw ({self.path}): {err}")

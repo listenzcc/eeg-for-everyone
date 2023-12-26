@@ -372,7 +372,7 @@ async def get_eeg_epochs_events_csv(
             iter(json.dumps(res)), media_type="text/json", status_code=404
         )
 
-    df = pd.DataFrame(epochs.events, columns=["Timestamp", "Duration", "Event"])
+    df = pd.DataFrame(epochs.events, columns=["timeStamp", "duration", "label"])
     csv = df2csv(df)
 
     return Response(csv, media_type="text/csv")
