@@ -63,17 +63,24 @@ startsWithEpochsEventsCsv()
  * mkEventSelector();
  */
 let onLoadEventsAndSensors = () => {
-    let events = [...new Set(eventsData.map(d => d.label))],
+    let events = [...new Set(eventsData.map(d => d.label))].sort((a, b) => a - b),
         container = document.getElementById('zcc-eventSelectContainer');
 
     // Refresh container
     container.innerHTML = '';
     container = d3.select(container);
 
-    // Append event label selector
     {
-        let div = container.append('div').html(`
-<div>
+
+        let controllerContainer = container.append('div').html(`
+<div class="flex w-full px-4 py-4">
+</div>
+        `).select('div')
+
+        // Append event label selector
+        {
+            let div = controllerContainer.append('div').html(`
+<div class="px-4">
     <label class="block text-sm font-bold leading-6 text-gray-900">
         Choose event
     </label>
@@ -81,23 +88,33 @@ let onLoadEventsAndSensors = () => {
 </div>
     `)
 
-        eventLabelSelector = div.select('select')
-        eventLabelSelector.on('change', (e) => {
-            onSelectEventLabel()
-        })
+            eventLabelSelector = div.select('select')
+            eventLabelSelector.on('change', (e) => {
+                onSelectEventLabel()
+            })
 
-        eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d)
+            eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d)
+        }
+
+        // Append time stamp selector
+        {
+            let div = controllerContainer.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Choose epoch timeStamp
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+    `)
+
+            epochsTimeStampSelector = div.select('select')
+            epochsTimeStampSelector.on('change', (e) => {
+                onSelectEpochTimeStamp()
+            })
+            // ! Will be appended children by onSelectEventLabel(x)
+        }
     }
-    // eventLabelSelector = container.append('div').append('label').text('Choose event:').append('select').on('change', (e) => {
-    //     onSelectEventLabel()
-    // })
-    // eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d)
 
-    // Append time stamp selector
-    epochsTimeStampSelector = container.append('div').append('label').text('Choose epoch:').append('select').on('change', (e) => {
-        onSelectEpochTimeStamp()
-    })
-    // ! Will be appended children by onSelectEventLabel(x)
 
     // Add graph
     eventsGraph = container.append('div')
@@ -150,40 +167,62 @@ let onloadEvokedData = () => {
     `)
     sensorNamesSelector.selectAll('label').select('label').select('input').property('checked', d => d.isGoodSensor).on('change', e => redrawEvokedGraphics())
 
-    // Toggle for show|hide all the sensors
+    // Add evoked data displaying controller
     {
         let div = container.append('div').html(`
-<div class="max-w-xs flex justify-between p-3 w-full">
+<div class="max-w-xs flex justify-between p-3 w-full items-end">
 </div>
-        `)
+        `).select('div')
 
-        div = div.select('div')
-
+        // Append toggle for hiding all the sensors
         div.append('div').html(d => `
-<button type="button" class="px-4 py-2 font-semibold text-sm bg-blue-900 text-white rounded-lg shadow-lg">
-    Hide all sensors
-</button>
+<div class="px-4">
+    <button type="button" class="px-4 py-2 w-48 font-semibold text-sm bg-white border-blue-900 border text-blue-900 rounded-lg shadow-lg">
+        Hide all sensors
+    </button>
+</div>
     `).on('click', e => {
             sensorNamesSelector.selectAll('label').select('label').select('input').property('checked', d => false)
             redrawEvokedGraphics()
         })
 
+        // Append toggle for showing all the sensors
         div.append('div').html(d => `
-<button type="button" class="px-4 py-2 font-semibold text-sm bg-blue-900 text-white rounded-lg shadow-lg">
-    Show all sensors
-</button>
+<div class="px-4">
+    <button type="button" class="px-4 py-2 w-48 font-semibold text-sm bg-blue-900 text-white rounded-lg shadow-lg">
+        Show all sensors
+    </button>
+</div>
     `).on('click', e => {
             sensorNamesSelector.selectAll('label').select('label').select('input').property('checked', d => d.isGoodSensor)
             redrawEvokedGraphics()
         })
 
-    }
+        // Append secs selector
+        secsSelector = div.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Choose time (Fine)
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+    `).select('select').on('change', (e) => {
+            redrawEvokedGraphics()
+        })
+        secsSelector.selectAll('option').data(evokedData.slice(0, evokedData.length - 1)).enter().append('option').attr('value', d => d._times).text(d => d._times)
 
-    // Append secs selector
-    secsSelector = container.append('div').append('label').text('Choose time:').append('select').on('change', (e) => {
-        redrawEvokedGraphics()
-    })
-    secsSelector.selectAll('option').data(evokedData.slice(0, evokedData.length - 1)).enter().append('option').attr('value', d => d._times).text(d => d._times)
+        div.append('div').html(`
+<div class="px-4 w-48">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Choose time (Corse)
+    </label>
+    <input class="slide py-1.5" type="range" min="1" max="${evokedData.length - 2}" value="${parseInt(evokedData.length / 2)}" step="1" >
+</div>
+        `).select('input').on('change', (e) => {
+            secsSelector.node().value = evokedData[parseInt(e.target.value)]._times
+            redrawEvokedGraphics()
+        })
+    }
 
     // Add evoked data graph
     evokedDataGraph = container.append('div')
@@ -227,7 +266,6 @@ let redrawEvokedGraphics = () => {
             x: d => d._times,
             y: d => d[name],
             stroke: d => color,
-            tip: true
         }))
 
         plt = Plot.plot({
@@ -236,6 +274,7 @@ let redrawEvokedGraphics = () => {
             title: 'Event label: ' + evokedData.eventLabel,
             grid: true,
             height: 400,
+            width: container.clientWidth,
             marks: lines.concat([
                 Plot.ruleX([secs])
             ])
@@ -257,15 +296,17 @@ let redrawEvokedGraphics = () => {
         plt = Plot.plot({
             x: { nice: true },
             y: { nice: true },
+            title: 'Secs: ' + secs,
             width: 600,
             grid: true,
-            color: { nice: true, legend: true, scheme: "RdBu", reverse: true, domain: [-1e-5, 1e-5] },
+            color: { nice: true, legend: true, scheme: "RdBu", reverse: true, domain: [-5e-5, 5e-5], range: [0, 1] },
             aspectRatio: 1.0,
             marks: [
                 Plot.contour(goodSensors, {
                     x: d2x,
                     y: d2y,
                     fill: 'value',
+                    stroke: '#33333333',
                     blur: 10,
                     interval: 1e-6,
                     opacity: 0.5
@@ -346,7 +387,8 @@ let onSelectEpochTimeStamp = () => {
     plt = Plot.plot({
         x: { nice: true, domain: extent },
         y: { nice: true },
-        color: { legend: true, scale: 'ordinal' },
+        width: container.clientWidth,
+        color: { legend: true, scale: 'ordinal', columns: 7 },
         grid: true,
         height: 400,
         marks: [

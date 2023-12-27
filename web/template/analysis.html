@@ -25,23 +25,37 @@
         <section class="py-20">
 
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    {% include 'components/raw-data-card.html' %}
+                {% include 'components/raw-data-card.html' %}
+
+                <!-- Event selection -->
+                <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% with heading="Event Selection"%}
+                    {% include 'components/section-heading.html'%}
+                    {% endwith %}
+
+                    <div id="zcc-eventSelectContainer" class="w-full">
+                        <p>eventSelectContainer</p>
+                        {% include 'components/loading-div.html' %}
+                    </div>
+
                 </div>
 
-                <div id="zcc-eventSelectContainer">
-                    <p>eventSelectContainer</p>
-                    {% include 'components/loading-div.html' %}
-                </div>
+                <!-- Evoked graphics -->
+                <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% with heading="Evoked Graphics"%}
+                    {% include 'components/section-heading.html'%}
+                    {% endwith %}
 
-                <div id="zcc-evokedDataContainer">
-                    <p>evokedDataContainer</p>
-                    {% include 'components/loading-div.html' %}
-                </div>
+                    <div id="zcc-evokedDataContainer" class="w-full">
+                        <p>evokedDataContainer</p>
+                        {% include 'components/loading-div.html' %}
+                    </div>
 
-                <div id="zcc-evokedGeometryContainer">
-                    <p>evokedGeometryContainer</p>
-                    {% include 'components/loading-div.html' %}
+                    <div id="zcc-evokedGeometryContainer" class="w-full">
+                        <p>evokedGeometryContainer</p>
+                        {% include 'components/loading-div.html' %}
+                    </div>
+
                 </div>
 
                 <div id="zcc-epochsWaveContainer">
