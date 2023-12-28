@@ -378,6 +378,61 @@ async def get_eeg_epochs_events_csv(
     return Response(csv, media_type="text/csv")
 
 
+@app.get("/zcc/getEEGSingleSensorData.csv")
+async def get_eeg_single_sensor_data_csv(
+    request: Request,
+    sensorName: str,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}")
+
+    res = dict(
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    )
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        reason = f"Invalid eeg data in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=1, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    epochs = eeg_data.epochs
+    if epochs is None:
+        reason = f"Invalid raw in session: {session}"
+        LOGGER.warning(reason)
+        res |= dict(_successFlag=2, _failReason=reason)
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+    try:
+        # Raw data shape is (events x 1 x times)
+        # The data is squeezed into (events x times)
+        data = epochs.get_data(picks=[sensorName]).squeeze()
+        # Append the times into the data, as the last raw.
+        # It changes the data into (events+1 x times) shape
+        data = np.concatenate([data, epochs.times[np.newaxis, :]], axis=0)
+        df = pd.DataFrame(data)
+        csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
+
+    except Exception as err:
+        res |= dict(_successFlag=3, _failReason=traceback.format_exc())
+        return StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        )
+
+
 @app.get("/zcc/getEEGEvokedData.csv")
 async def get_eeg_evoked_data_csv(
     request: Request,
@@ -475,6 +530,35 @@ async def post_template_setup_html(
 
     return RedirectResponse(
         url=f"/template/setup.html?experimentName={experimentName}&subjectID={subjectID}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@app.post("/template/singleSensorAnalysis.html", response_class=RedirectResponse)
+async def get_template_single_sensor_analysis_html(
+    request: Request, experimentName: str = "", subjectID: str = ""
+):
+    username = check_user_name(request)
+    session = zss.get_session(username)
+    LOGGER.debug(f"Checked username: {username}")
+    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+
+    # Make sure the session is using the same EEG data
+    if session.subjectID != subjectID:
+        sol = dict(
+            subjectID=subjectID,
+            msg=f"Not found subjectID: {subjectID}, current subjectID is {session.subjectID}",
+            whatToDo="Press the 'Raw' tab on the header bar to reload the subjectID data",
+        )
+        LOGGER.warning(f"Can not process setup request, giving solution: {sol}")
+        return Response(
+            json.dumps(sol),
+            media_type="text/json",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    return RedirectResponse(
+        url=f"/template/singleSensorAnalysis.html?experimentName={experimentName}&subjectID={subjectID}",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 

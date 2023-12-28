@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100">
+
+<head>
+
+    {% include 'components/global-head.html'%}
+
+    <script type="importmap">
+    {
+        "imports": {
+        "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+
+</head>
+
+<body class="h-full">
+
+    <div class="min-h-full min-w-[6in]">
+        {% include 'components/header-bar.html' %}
+
+        <!-- Content -->
+        <section class="py-20">
+
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {% include 'components/raw-data-card.html' %}
+
+                <!-- Sensor selection -->
+                <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% with heading="Event Selection Section"%}
+                    {% include 'components/section-heading.html'%}
+                    {% endwith %}
+
+                    <div id="zcc-sensorSelectorContainer" class="w-full">
+                        <p>sensorSelectorContainer</p>
+                        {% include 'components/loading-div.html' %}
+                    </div>
+                </div>
+
+                <!-- Results graphics -->
+                <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% with heading="Graphics Section"%}
+                    {% include 'components/section-heading.html'%}
+                    {% endwith %}
+
+                    <div id="zcc-sensorGraphicsContainer" class="w-full">
+                        <p>sensorGraphicsContainer</p>
+                        {% include 'components/loading-div.html' %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="zcc-next" class="w-full">
+                <p>to be continued</p>
+                {% include 'components/loading-div.html' %}
+            </div>
+
+        </section>
+
+        {% include "components/footer-bar.html" %}
+
+        <!-- Script -->
+        <section>
+            <form id="_thisForm" class="debug-only">
+                <label>Invisible but important private form</label>
+                <br>
+                <label>Experiment name</label>
+                <input id="_experimentName" value="{{experimentName}}">
+                <br>
+                <label>Subject id</label>
+                <input id="_subjectID" value="{{subjectID}}">
+            </form>
+            <script type="module" src="/src/singleSensorAnalysis.js">
+            </script>
+        </section>
+
+    </div>
+</body>
+
+</html>

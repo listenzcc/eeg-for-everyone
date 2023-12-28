@@ -419,7 +419,6 @@ let redrawEvokedGraphics = () => {
         }
 
         plt = Plot.plot({
-            // margin: 0,
             x: { nice: true },
             y: { nice: true },
             title: dataType.unit + ": " + secs,

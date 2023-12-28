@@ -975,6 +975,14 @@ video {
   width: 16rem;
 }
 
+.w-3\/4 {
+  width: 75%;
+}
+
+.w-\[600px\] {
+  width: 600px;
+}
+
 .min-w-\[10in\] {
   min-width: 10in;
 }
