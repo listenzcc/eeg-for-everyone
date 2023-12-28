@@ -114,8 +114,11 @@ class ZccSession(object):
             None"""
 
         def _collect_epochs():
+            # Newer timestamp prevents older ones from being used.
+            timestamp = time.time()
+            self.eeg_data.timestamp = timestamp
             epochs = self.eeg_data.collect_epochs(
-                events, tmin, tmax, l_freq, h_freq, decim
+                events, tmin, tmax, l_freq, h_freq, decim, timestamp
             )
 
             LOGGER.debug(

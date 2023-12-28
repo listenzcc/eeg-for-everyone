@@ -384,6 +384,7 @@ async def get_eeg_evoked_data_csv(
     event: int = 0,
     experimentName: str = "",
     subjectID: str = "",
+    dataType: str = "timeCourse",
 ):
     username = check_user_name(request)
     session = zss.get_session(username)
@@ -420,10 +421,20 @@ async def get_eeg_evoked_data_csv(
         # Data shape is (timepoints x channels)
         data = evoked.get_data().transpose()
 
-        df = pd.DataFrame(data, columns=epochs.ch_names)
-        df["_times"] = epochs.times
-        print(df)
+        if dataType == "timeCourse":
+            df = pd.DataFrame(data, columns=epochs.ch_names)
+            df["_times"] = epochs.times
+
+        elif dataType == "freqDomain":
+            n = data.shape[0]
+            fft = np.fft.fft(data, axis=0)
+            abs_fft = np.abs(fft) / n
+            df = pd.DataFrame(abs_fft, columns=epochs.ch_names)
+            df["_freq"] = np.linspace(0, evoked.info["sfreq"], n)
+            df = df.iloc[: int(n / 2)]
+
         csv = df2csv(df)
+
         return Response(csv, media_type="text/csv")
 
     except Exception as err:

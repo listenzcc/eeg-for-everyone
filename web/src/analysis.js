@@ -16,12 +16,21 @@ let colorMap = d3.schemeCategory10,
     eventsGraph,
     evokedDataGraph,
     evokedGeometryGraph,
+    evokedDataCorrelationGraph,
 
     // Dynamic data
     eventsData,
     montageSensors,
     evokedData,
-    chNames;
+    evokedDataCorrelationMatrix,
+    chNames,
+
+    // Data type of timeCourse or freqDomain
+    dataTypeOptions = [
+        { type: 'timeCourse', axis: '_times', unit: 'Secs', noun: 'time', domain: [-20, 20], scaleType: 'linear', contourInterval: 5 }, // timeCourse
+        { type: 'freqDomain', axis: '_freq', unit: 'Hz', noun: 'freq', domain: undefined, scaleType: 'log', contourInterval: undefined }, // PSD
+    ],
+    dataType = Object.assign({}, dataTypeOptions[0]);
 
 /**
  * Fetches the epochs events CSV data and initializes the events and sensors.
@@ -42,6 +51,9 @@ let startsWithEpochsEventsCsv = () => {
             montageSensors = betterMontageSensors(sensors)
             console.log('Fetched montageSensors', montageSensors)
             onLoadEventsAndSensors()
+
+            document.getElementById('zcc-singleSensorContainer').style.display = 'none'
+            document.getElementById('zcc-startSingleSensorAnalysisContainer').style.display = ''
         })
 
     }).catch((err) => {
@@ -79,16 +91,15 @@ let onLoadEventsAndSensors = () => {
 
         // Append event label selector
         {
-            let div = controllerContainer.append('div').html(`
+            eventLabelSelector = controllerContainer.append('div').html(`
 <div class="px-4">
     <label class="block text-sm font-bold leading-6 text-gray-900">
         Choose event
     </label>
     <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
 </div>
-    `)
+    `).select('select')
 
-            eventLabelSelector = div.select('select')
             eventLabelSelector.on('change', (e) => {
                 onSelectEventLabel()
             })
@@ -96,25 +107,44 @@ let onLoadEventsAndSensors = () => {
             eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d)
         }
 
+
         // Append time stamp selector
         {
-            let div = controllerContainer.append('div').html(`
+            epochsTimeStampSelector = controllerContainer.append('div').html(`
 <div class="px-4">
     <label class="block text-sm font-bold leading-6 text-gray-900">
         Choose epoch timeStamp
     </label>
     <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
 </div>
-    `)
+    `).select('select')
 
-            epochsTimeStampSelector = div.select('select')
             epochsTimeStampSelector.on('change', (e) => {
                 onSelectEpochTimeStamp()
             })
             // ! Will be appended children by onSelectEventLabel(x)
         }
-    }
 
+        // Append data type selector
+        {
+
+            let select = controllerContainer.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Choose DataType
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+    `).select('select').on('change', (e) => {
+                let d = dataTypeOptions.find(d => d.type === e.target.value)
+                Object.assign(dataType, d)
+                console.log(dataType, d, e.target.value, dataTypeOptions)
+                onSelectEventLabel()
+            })
+
+            select.selectAll('option').data(dataTypeOptions).enter().append('option').attr('value', d => d.type).text(d => d.type)
+        }
+    }
 
     // Add graph
     eventsGraph = container.append('div')
@@ -133,7 +163,7 @@ let onLoadEventsAndSensors = () => {
  * onloadEvokedData();
  */
 let onloadEvokedData = () => {
-    chNames = evokedData.columns.filter(d => d.length > 0 && d !== '_times')
+    chNames = evokedData.columns.filter(d => d.length > 0 && d !== dataType.axis)
 
     let container = document.getElementById('zcc-evokedDataContainer'),
         // Good sensors are the sensors in both evokedData and montageSensors
@@ -146,6 +176,8 @@ let onloadEvokedData = () => {
             color = isGoodSensor ? goodSensors.find(d => d.name === name).color : 'gray';
         return Object.assign({ name }, { color, isGoodSensor })
     })
+
+    computeEvokedDataCorrelation();
 
     console.log('The chNames are generated:', chNames)
     console.log('The goodSensors (has pos in montage):', goodSensors)
@@ -198,34 +230,70 @@ let onloadEvokedData = () => {
             redrawEvokedGraphics()
         })
 
+        // Append toggle for views
+        div.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Toggle views
+    </label>
+    <select class="relative w-64 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+    `).select('select').on('change', (e) => {
+            let { value } = e.target;
+
+            sensorNamesSelector.node().style.display = value.includes('Sensor') ? '' : 'none'
+            let nodes = evokedDataGraph.selectAll('figure').nodes()
+            nodes[0].style.display = value.includes('Curve') ? '' : 'none'
+            nodes[1].style.display = value.includes('Rect') ? '' : 'none'
+
+        }).selectAll('option').data([
+            'Sensor | Curve | Rect',
+            'Sensor | Curve',
+            'Sensor | Rect',
+            'Curve | Rect',
+            'Curve',
+            'Rect',
+            'Sensor'
+        ]).enter().append('option').attr('value', d => d).text(d => d)
+
+    }
+
+    // Append evoked data graph
+    evokedDataGraph = container.append('div')
+
+    {
+        let div = container.append('div').html(`
+<div class="max-w-xs flex justify-between p-3 w-full items-end">
+</div>
+        `).select('div')
+
         // Append secs selector
+        // Fine selector in selection menu style
         secsSelector = div.append('div').html(`
 <div class="px-4">
     <label class="block text-sm font-bold leading-6 text-gray-900">
-        Choose time (Fine)
+        Choose ${dataType.noun} (Fine)
     </label>
     <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
 </div>
     `).select('select').on('change', (e) => {
             redrawEvokedGraphics()
         })
-        secsSelector.selectAll('option').data(evokedData.slice(0, evokedData.length - 1)).enter().append('option').attr('value', d => d._times).text(d => d._times)
+        secsSelector.selectAll('option').data(evokedData.slice(0, evokedData.length - 1)).enter().append('option').attr('value', d => d[dataType.axis]).text(d => d[dataType.axis])
 
+        // Course selector in sliding style
         div.append('div').html(`
 <div class="px-4 w-48">
     <label class="block text-sm font-bold leading-6 text-gray-900">
-        Choose time (Corse)
+        Choose ${dataType.noun} (Corse)
     </label>
-    <input class="slide py-1.5" type="range" min="1" max="${evokedData.length - 2}" value="${parseInt(evokedData.length / 2)}" step="1" >
+    <input class="slide py-1.5" type="range" min="0" max="${evokedData.length - 2}" value="1" step="1" >
 </div>
         `).select('input').on('change', (e) => {
-            secsSelector.node().value = evokedData[parseInt(e.target.value)]._times
+            secsSelector.node().value = evokedData[parseInt(e.target.value)][dataType.axis]
             redrawEvokedGraphics()
         })
     }
-
-    // Add evoked data graph
-    evokedDataGraph = container.append('div')
 
     // Append evoked geometry graph
     {
@@ -233,8 +301,18 @@ let onloadEvokedData = () => {
         container.innerHTML = ''
         container = d3.select(container)
         evokedGeometryGraph = container.append('div')
-        redrawEvokedGraphics()
     }
+
+    // Append evoked data correlation graph
+    {
+        let container = document.getElementById('zcc-evokedDataCorrelationContainer');
+        container.innerHTML = ''
+        container = d3.select(container)
+        evokedDataCorrelationGraph = container.append('div')
+    }
+
+    // Every thing is fine
+    redrawEvokedGraphics()
 
 }
 
@@ -250,73 +328,124 @@ let onloadEvokedData = () => {
 let redrawEvokedGraphics = () => {
     // Good sensors are the sensors in both evokedData and montageSensors
     let secs = parseFloat(secsSelector.node().value),
-        goodSensors = chNames.map(({ name }) => montageSensors.find(d => d.name === name)).filter(d => d);
+        goodSensors = chNames.map(({ name }) => montageSensors.find(d => d.name === name)).filter(d => d),
+        data = evokedData.find(e => e[dataType.axis] > secs);
+
+    goodSensors.map(d => Object.assign(d, { value: data[d.name] }))
 
     let plotEvokedDataGraph = () => {
-        let plt,
+        let pltCurve,
             lines,
+            pltCell,
+            cellData = [],
             container = evokedDataGraph.node(),
-            times = evokedData.map(d => d._times),
+            times = evokedData.map(d => dataType.typeName === 'timeCourse' ? d[dataType.axis] : parseInt(d[dataType.axis])),
             checks = sensorNamesSelector.selectAll('label').select('label').select('input').nodes().map(d => d.checked),
             displayChNames = chNames.filter((d, i) => checks[i])
 
         console.log('Display chNames:', displayChNames)
-
-        lines = displayChNames.map(({ name, color }) => Plot.line(evokedData, {
-            x: d => d._times,
-            y: d => d[name],
-            stroke: d => color,
-        }))
-
-        plt = Plot.plot({
-            x: { nice: true, domain: d3.extent(times) },
-            y: { nice: true, nice: true },
-            title: 'Event label: ' + evokedData.eventLabel,
-            grid: true,
-            height: 400,
-            width: container.clientWidth,
-            marks: lines.concat([
-                Plot.ruleX([secs])
-            ])
-        })
-
         container.innerHTML = ''
-        container.appendChild(plt)
+
+        {
+            lines = displayChNames.map(({ name, color }) => Plot.line(evokedData, {
+                x: d => d[dataType.axis],
+                y: d => d[name] * 1e6,
+                stroke: d => color,
+            }))
+
+            pltCurve = Plot.plot({
+                x: { nice: true, domain: d3.extent(times), label: dataType.unit },
+                y: { nice: true, nice: true, label: "μV", type: dataType.scaleType },
+                title: 'Curve view | Event label: ' + evokedData.eventLabel,
+                grid: true,
+                height: 300,
+                width: container.clientWidth,
+                marks: lines.concat([
+                    Plot.ruleX([secs]),
+                    Plot.ruleY([0]),
+                    Plot.text(goodSensors.filter(d => displayChNames.findIndex(e => e.name === d.name) > -1), { x: secs, y: d => d.value * 1e6, text: 'name', fill: 'color', dx: 20, fontSize: 20 }),
+                    Plot.text(goodSensors.filter(d => displayChNames.findIndex(e => e.name === d.name) > -1), { x: evokedData[evokedData.length - 1][dataType.axis], y: d => d.value * 1e6, text: 'name', fill: 'color', dx: 10, dy: 20, fontSize: 10 }),
+                ])
+            })
+
+            container.appendChild(pltCurve)
+        }
+
+        {
+            chNames.map(({ name }) => evokedData.map(d => {
+                cellData.push({ name, value: d[name] * 1e6, secs: d[dataType.axis], isSelected: displayChNames.findIndex(e => e.name === name) > -1 })
+            }))
+
+            pltCell = Plot.plot({
+                color: {
+                    legend: true,
+                    scheme: 'RdBu',
+                    reverse: true,
+                    label: 'μV',
+                    domain: dataType.domain,
+                    type: dataType.scaleType
+                },
+                x: {
+                    nice: true,
+                    label: dataType.unit,
+                    ticks: dataType.type === 'timeCourse' ? [times[0], 0, times[times.length - 1]] : [times[0], times[times.length - 1]]
+                },
+                y: { nice: true, ticks: displayChNames.map(d => d.name) },
+                title: 'Rect view | Event label: ' + evokedData.eventLabel,
+                height: 300,
+                width: container.clientWidth,
+                marks: [
+                    Plot.cell(cellData, { x: 'secs', y: 'name', fill: d => d.isSelected ? d.value : undefined, tip: true }),
+                    Plot.ruleX([secs]),
+                ]
+            })
+
+            container.appendChild(pltCell)
+        }
     }
 
     let plotEvokedGeometryGraph = () => {
         let plt,
+            aspectRatio,
             d2x = (d) => d.theta * Math.cos(d.phi),
             d2y = (d) => d.theta * Math.sin(d.phi),
-            container = evokedGeometryGraph.node(),
-            data = evokedData.find(e => e._times > secs);
+            container = evokedGeometryGraph.node();
 
-        goodSensors.map(d => Object.assign(d, { value: data[d.name] }))
+        {
+            let xRange = d3.extent(goodSensors, d2x),
+                yRange = d3.extent(goodSensors, d2y)
+
+            aspectRatio = (yRange[1] - yRange[0]) / (xRange[1] - xRange[0])
+        }
 
         plt = Plot.plot({
+            // margin: 0,
             x: { nice: true },
             y: { nice: true },
-            title: 'Secs: ' + secs,
-            width: 600,
-            grid: true,
-            color: { nice: true, legend: true, scheme: "RdBu", reverse: true, domain: [-5e-5, 5e-5], range: [0, 1] },
-            aspectRatio: 1.0,
+            title: dataType.unit + ": " + secs,
+            width: container.clientWidth,
+            aspectRatio: aspectRatio || 1.0,
+            color: {
+                nice: true, legend: true, scheme: "RdBu", reverse: true, range: [0, 1], label: 'μV',
+                domain: dataType.domain,
+                type: dataType.scaleType
+            },
             marks: [
                 Plot.contour(goodSensors, {
                     x: d2x,
                     y: d2y,
-                    fill: 'value',
+                    fill: d => d.value * 1e6,
                     stroke: '#33333333',
                     blur: 10,
-                    interval: 1e-6,
-                    opacity: 0.5
+                    interval: dataType.contourInterval,
+                    opacity: 0.5,
+                    tip: true
                 }),
                 Plot.dot(goodSensors, {
                     x: d2x,
                     y: d2y,
                     fill: "color",
                     r: 2,
-                    tip: true
                 }),
                 Plot.text(goodSensors, {
                     x: d2x,
@@ -333,8 +462,34 @@ let redrawEvokedGraphics = () => {
         container.appendChild(plt)
     }
 
+    let plotEvokedDataCorrelationGraph = () => {
+        let plt,
+            container = evokedDataCorrelationGraph.node(),
+            checks = sensorNamesSelector.selectAll('label').select('label').select('input').nodes().map(d => d.checked),
+            displayChNames = chNames.filter((d, i) => checks[i]),
+            dataMatrix = evokedDataCorrelationMatrix.filter(d => displayChNames.findIndex(e => e.name === d.n1) > -1)
+
+        plt = Plot.plot({
+            x: { nice: true },
+            y: { nice: true, reverse: true, axis: 'right' },
+            title: 'Correlation',
+            width: container.clientWidth,
+            height: container.clientWidth,
+            color: { nice: true, legend: true, scheme: "PiYG" },
+            aspectRatio: 1.0,
+            marks: [
+                Plot.cell(dataMatrix, { x: 'n1', y: 'n2', fill: d => d.n1 === d.n2 ? undefined : d.corr, tip: true })
+            ]
+
+        })
+
+        container.innerHTML = ''
+        container.appendChild(plt)
+    }
+
     plotEvokedDataGraph()
     plotEvokedGeometryGraph()
+    plotEvokedDataCorrelationGraph()
 }
 
 /**
@@ -357,12 +512,13 @@ let onSelectEventLabel = () => {
 
     onSelectEpochTimeStamp(data[0].timeStamp)
 
-    d3.csv(`/zcc/getEEGEvokedData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&event=${eventLabel}`).then(csv => {
+    d3.csv(`/zcc/getEEGEvokedData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&event=${eventLabel}&dataType=${dataType.type}`).then(csv => {
         evokedData = csvParseFloat(csv)
+        evokedData.map(d => d[dataType.axis] = parseFloat(d[dataType.axis].toFixed(2)))
         evokedData.eventLabel = eventLabel
         console.log('Fetched evoked data:', evokedData)
 
-        onloadEvokedData(evokedData)
+        onloadEvokedData()
     })
 
 }
@@ -477,11 +633,19 @@ let csvParseInt = (csv) => {
  * console.log(parsedData); // [{ a: 1.5, b: 2.7 }, { a: 3.2, b: 4.9 }]
  */
 let csvParseFloat = (csv) => {
+    let max = -1e6,
+        min = 1e6;
+
     csv.map(d => {
         for (let c in d) {
             d[c] = parseFloat(d[c])
+            max = d[c] > max ? d[c] : max
+            min = d[c] < min ? d[c] : min
         }
     })
+
+    Object.assign(csv, { max, min })
+
     return csv
 }
 
@@ -511,5 +675,46 @@ let betterMontageSensors = (sensors) => {
         Object.assign(s, xyz2polar(s));
     });
 
+    sensors.map((s) => Object.assign(s, {
+        color: d3.hsl(s.phi / Math.PI / 2 * 360, s.theta / Math.PI, 0.5).hex()
+    }))
+
     return sensors
+}
+
+/**
+ * Computes the correlation matrix for the evoked data.
+ *
+ * @returns {void}
+ *
+ * @example
+ * computeCorrelation();
+ */
+let computeEvokedDataCorrelation = () => {
+    let s1,
+        s2,
+        mean,
+        std,
+        nSubOne = evokedData.length - 1,
+        goodSensors = chNames.map(({ name }) => montageSensors.find(d => d.name === name)).filter(d => d);
+
+    evokedDataCorrelationMatrix = []
+
+    let normalize = (array) => {
+        mean = d3.mean(array)
+        std = Math.pow(d3.variance(array), 0.5)
+        return array.map(d => (d - mean) / std)
+    }
+
+    goodSensors.map(({ name: n1 }) => {
+        goodSensors.map(({ name: n2 }) => {
+            s1 = normalize(evokedData.map(d => 1e6 * d[n1]))
+            s2 = normalize(evokedData.map(d => 1e6 * d[n2]))
+
+            s1 = s1.map((v1, i) => Object.assign({}, { v1, v2: s2[i] }))
+
+            evokedDataCorrelationMatrix.push({ n1, n2, corr: d3.sum(s1, d => d.v1 * d.v2 / nSubOne) })
+        })
+    })
+
 }

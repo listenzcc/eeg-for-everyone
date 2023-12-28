@@ -19,6 +19,7 @@ Functions:
 # %% ---- 2023-12-25 ------------------------
 # Requirements and constants
 import mne
+import time
 import traceback
 
 import numpy as np
@@ -34,10 +35,12 @@ from .phase_1st_load_raw import ZccEEGRaw
 # %% ---- 2023-12-25 ------------------------
 # Function and class
 class ZccEEGEpochs(ZccEEGRaw):
+    timestamp = time.time()
+
     def __init__(self, path: Path):
         super(ZccEEGEpochs, self).__init__(path)
 
-    def collect_epochs(self, events, tmin, tmax, l_freq, h_freq, decim):
+    def collect_epochs(self, events, tmin, tmax, l_freq, h_freq, decim, timestamp=None):
         # Reset following objects since the new epochs are loading
         self.epochs = None
         self.evoked = None
@@ -46,8 +49,6 @@ class ZccEEGEpochs(ZccEEGRaw):
 
         # Convert events from array of N numbers into shape (N, 3) events record
         events = [e for e in self.events if e[2] in events]
-        print(events)
-        print(self.events)
 
         kwargs = dict(
             events=events,
@@ -62,13 +63,21 @@ class ZccEEGEpochs(ZccEEGRaw):
         epochs.filter(l_freq, h_freq, n_jobs=8, verbose=True)
         epochs.decimate(decim, verbose=True)
 
-        self.epochs = epochs
-
-        LOGGER.debug(f"Collected epochs: {epochs}")
+        if timestamp is None or timestamp == self.timestamp:
+            self.epochs = epochs
+            LOGGER.debug(f"Collected epochs: {epochs}")
+        else:
+            LOGGER.warning(
+                f"""
+Dropped the computed epochs: {epochs} since the timestamp is not matched.
+The reason is it computes too slow and during the computation,
+the user has commanded another computation.
+"""
+            )
 
         # self.check_progress()
 
-        return self.epochs
+        return epochs
 
 
 # %% ---- 2023-12-25 ------------------------

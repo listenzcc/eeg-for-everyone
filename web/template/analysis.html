@@ -29,7 +29,7 @@
 
                 <!-- Event selection -->
                 <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    {% with heading="Event Selection"%}
+                    {% with heading="Event Selection Section"%}
                     {% include 'components/section-heading.html'%}
                     {% endwith %}
 
@@ -42,7 +42,7 @@
 
                 <!-- Evoked graphics -->
                 <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    {% with heading="Evoked Graphics"%}
+                    {% with heading="Evoked Graphics Section"%}
                     {% include 'components/section-heading.html'%}
                     {% endwith %}
 
@@ -51,27 +51,39 @@
                         {% include 'components/loading-div.html' %}
                     </div>
 
-                    <div id="zcc-evokedGeometryContainer" class="w-full">
-                        <p>evokedGeometryContainer</p>
+                    <div class="flex">
+                        <div id="zcc-evokedGeometryContainer" class="w-1/2">
+                            <p>evokedGeometryContainer</p>
+                            {% include 'components/loading-div.html' %}
+                        </div>
+
+                        <div id="zcc-evokedDataCorrelationContainer" class="w-1/2">
+                            <p>evokedDataCorrelationContainer</p>
+                            {% include 'components/loading-div.html' %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evoked graphics -->
+                <div class="my-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% with heading="Single Sensor Section"%}
+                    {% include 'components/section-heading.html'%}
+                    {% endwith %}
+
+                    <div id="zcc-singleSensorContainer">
+                        <p>singleSensorContainer</p>
                         {% include 'components/loading-div.html' %}
                     </div>
 
+                    {% with
+                    id="zcc-startSingleSensorAnalysisContainer",
+                    txt='Goto Single Sensor Analysis',
+                    href="/template/singleSensorAnalysis.html?experimentName="+experimentName+"&subjectID="+subjectID
+                    %}
+                    {% include 'components/goto-next-step-button.html' %}
+                    {% endwith %}
                 </div>
 
-                <div id="zcc-epochsWaveContainer">
-                    <p>epochsWaveContainer</p>
-                    {% include 'components/loading-div.html' %}
-                </div>
-
-                <div id="zcc-epochsGeometryContainer">
-                    <p>epochsGeometryContainer</p>
-                    {% include 'components/loading-div.html' %}
-                </div>
-
-                <div id="zcc-evokedWaveContainer">
-                    <p>evokedWaveContainer</p>
-                    {% include 'components/loading-div.html' %}
-                </div>
             </div>
 
         </section>
@@ -80,7 +92,7 @@
 
         <!-- Script -->
         <section>
-            <form id="_thisForm" class="">
+            <form id="_thisForm" class="debug-only">
                 <label>Invisible but important private form</label>
                 <br>
                 <label>Experiment name</label>

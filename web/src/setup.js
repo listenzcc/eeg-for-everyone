@@ -42,6 +42,9 @@ let checkSetups = () => {
             .attr('name', d => d.name)
             .attr('value', d => d.value)
 
+        d3.select(dom).select('span').html(`Goto Analysis | ${d3.sum(setup.events.value, d => d.count)} epochs`)
+        console.log(d3.select(dom).select('span'))
+
         console.log('All setup finished', setup, data)
     } else {
         document.getElementById('zcc-startAnalysisContainer').style = 'display: none'
