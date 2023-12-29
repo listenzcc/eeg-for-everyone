@@ -10,6 +10,7 @@ let colorMap = d3.schemeCategory10,
     // Globals 
     chNames,
     eventsData,
+    timesData,
     montageSensors,
 
     // Single sensor data
@@ -22,10 +23,12 @@ let colorMap = d3.schemeCategory10,
     eventLabelSelector,
     epochTimestampSelector,
     epochDomainSelector,
+    secsSelector,
 
     // Containers
     geometryGraphContainer,
-    sensorGraphicsContainer
+    epochsTimeCourseContainer,
+    averagedAnalysisContainer
     ;
 
 
@@ -115,8 +118,21 @@ let onSelectSensor = () => {
 }
 
 let onLoadSingleSensorData = () => {
-    let times = sensorData[sensorData.length - 1],
-        sd, secs, v;
+    let sd, secs, v, secsArray;
+
+
+    secsArray = []
+    {
+        let data = sensorData[sensorData.length - 1]
+        timesData = {}
+        for (let j in data) {
+            if (j !== "") {
+                timesData[j] = data[j]
+                secsArray.push(data[j])
+            }
+        }
+    }
+    console.log('Fetched the timesData:', timesData)
 
     parsedSensorData = []
 
@@ -127,7 +143,7 @@ let onLoadSingleSensorData = () => {
                 continue
             }
             v = sd[j]
-            secs = times[j]
+            secs = timesData[j]
             parsedSensorData.push(Object.assign({ v, secs }, ed))
         }
     })
@@ -141,7 +157,7 @@ let onLoadSingleSensorData = () => {
     {
         let events = [...new Set(eventsData.map(d => d.label))].sort((a, b) => a - b),
             controllerContainer = container.append('div').html(`
-<div class="flex w-full px-4 py-4">
+<div class="flex flex-wrap w-full px-4 py-4">
 </div>
         `).select('div')
 
@@ -174,8 +190,26 @@ let onLoadSingleSensorData = () => {
 </div>
     `).select('select').on('change', (e) => {
                 plotSensorTimeCourse()
+                plotAveragedSensorTimeCourse()
             })
             // ! Will be appended children by onSelectEventLabel(x)
+        }
+
+        // Append seconds selector
+        {
+            secsSelector = controllerContainer.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Choose secs.
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+    `).select('select').on('change', (e) => {
+                plotSensorTimeCourse()
+                plotAveragedSensorTimeCourse()
+            })
+
+            secsSelector.selectAll('option').data(secsArray).enter().append('option').attr('value', d => d).text(d => d)
         }
 
         // Append domain selector
@@ -189,18 +223,40 @@ let onLoadSingleSensorData = () => {
 </div>
             `).select('select').on('change', (e) => {
                 plotSensorTimeCourse()
+                plotAveragedSensorTimeCourse()
             })
 
             epochDomainSelector.selectAll('option').data([-1, 20, 50, 100, 200]).enter().append('option').attr('value', d => d).text(d => d)
         }
+
+        {
+            controllerContainer.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Toggle views
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+            `).select('select').on('change', e => {
+                let { value } = e.target;
+                epochsTimeCourseContainer.node().style.display = value.includes('TimeCourseView') ? '' : 'none'
+                averagedAnalysisContainer.node().style.display = value.includes('AveragedView') ? '' : 'none'
+            }).selectAll('options').data([
+                'TimeCourseView | AveragedView',
+                'AveragedView',
+            ]).enter().append('option').attr('value', d => d).text(d => d)
+        }
     }
 
-    sensorGraphicsContainer = container.append('div').html(`
+    epochsTimeCourseContainer = container.append('div').html(`
+<div class='w-full'></div>
+    `).select('div')
+
+    averagedAnalysisContainer = container.append('div').html(`
 <div class='w-full'></div>
     `).select('div')
 
     onChangeEventLabelSelector()
-    plotSensorTimeCourse()
 }
 
 let onChangeEventLabelSelector = () => {
@@ -217,43 +273,137 @@ let onChangeEventLabelSelector = () => {
 }
 
 let plotAveragedSensorTimeCourse = () => {
-    d3.csv(`/zcc/getEEGSingleSensorAverageData.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
-        console.log(csv)
+    d3.csv(`/zcc/getEEGSingleSensorAveragedData.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
+        let container = averagedAnalysisContainer.node(),
+            seconds = parseFloat(secsSelector.node().value),
+            data = [];
+
+        console.log(seconds)
+
+        for (let i in timesData) {
+            data.push(Object.assign({ v: parseFloat(csv[0][i]) }, { secs: timesData[i] }))
+        }
+
+        container.innerHTML = ''
+
+        {
+            let plt,
+                secsData = data.filter(d => d.secs === seconds)
+                ;
+
+            plt = Plot.plot({
+                x: { nice: true },
+                y: { nice: true, label: 'μV' },
+                color: { legend: true, scheme: 'RdBu' },
+                grid: true,
+                title: `Averaged time course | Sensor ${selectedSensorName} | Event label ${selectedEventLabel}`,
+                width: container.clientWidth,
+                marks: [
+                    Plot.ruleY([0], { stroke: '#FEDFE1' }),
+                    Plot.ruleX([seconds]),
+                    Plot.ruleX([0], { stroke: '#FEDFE1' }),
+                    Plot.line(data, { x: 'secs', y: value2muVolt }),
+                    Plot.dot(data, { x: 'secs', y: value2muVolt, tip: true, fill: value2muVolt, stroke: 'black', strokeWidth: 0.5, r: 3 }),
+                    Plot.dot(secsData, { x: 'secs', y: value2muVolt, fill: value2muVolt, r: 16, strokeWidth: 2, stroke: 'white' }),
+                    Plot.text(secsData, { x: 'secs', y: value2muVolt, text: d => value2muVolt(d).toFixed(2), fontSize: 12, fontWeight: 'bold' })
+                ]
+            })
+
+            container.appendChild(plt)
+        }
+
     }).catch(error => {
         console.log(error)
     })
 }
 
 let plotSensorTimeCourse = () => {
-    let plt,
-        domain = undefined,
-        d = parseFloat(epochDomainSelector.node().value),
-        container = sensorGraphicsContainer.node(),
+    let container = epochsTimeCourseContainer.node(),
         eventLabel = parseInt(eventLabelSelector.node().value),
-        timestamp = parseInt(epochTimestampSelector.node().value);
-
-    if (d > 0) {
-        domain = [-d, d]
-    }
-
-    plt = Plot.plot({
-        x: { nice: true },
-        y: { nice: true, label: 'μV', domain },
-        color: { scheme: 'tableau10' },
-        title: `Sensor ${selectedSensorName} | ${eventLabel}:${timestamp}`,
-        width: container.clientWidth,
-        marks: [
-            d > 0 ? Plot.frame() : undefined,
-            Plot.line(parsedSensorData,
-                { x: 'secs', y: d => d.v * 1e6, fy: 'label', stroke: 'timeStamp', opacity: 0.4 }),
-            Plot.ruleX([0]),
-            Plot.line(parsedSensorData.filter(d => d.label === eventLabel && d.timeStamp === timestamp),
-                { x: 'secs', y: d => d.v * 1e6, fy: 'label', stroke: 'black', strokeWidth: 3, tip: true })
-        ],
-    })
+        timestamp = parseInt(epochTimestampSelector.node().value),
+        seconds = parseFloat(secsSelector.node().value);
 
     container.innerHTML = ''
-    container.appendChild(plt)
+
+    // Append epochs time course figure
+    {
+        let plt,
+            domain = undefined,
+            d = parseFloat(epochDomainSelector.node().value);
+
+        if (d > 0) {
+            domain = [-d, d]
+        }
+
+        plt = Plot.plot({
+            x: { nice: true },
+            y: { nice: true, label: 'μV', domain },
+            color: { scheme: 'tableau10' },
+            title: `Time course | Sensor ${selectedSensorName} | EventLabel ${eventLabel} | TimeStamp ${timestamp}`,
+            width: container.clientWidth,
+            marks: [
+                d > 0 ? Plot.frame() : undefined,
+                Plot.line(parsedSensorData,
+                    { x: 'secs', y: value2muVolt, fy: 'label', stroke: 'timeStamp', opacity: 0.4 }),
+                Plot.ruleX([0]),
+                Plot.ruleX([seconds], { stroke: 'red' }),
+                Plot.line(parsedSensorData.filter(d => d.label === eventLabel && d.timeStamp === timestamp),
+                    { x: 'secs', y: value2muVolt, fy: 'label', stroke: 'black', strokeWidth: 3, tip: true })
+            ],
+        })
+        container.appendChild(plt)
+    }
+
+    {
+        let plt;
+
+        plt = Plot.plot({
+            x: { nice: true },
+            y: { nice: true, label: 'μV' },
+            color: { scheme: 'RdBu' },
+            title: `Time course (2) | Sensor ${selectedSensorName} | EventLabel ${eventLabel} | TimeStamp ${timestamp}`,
+            width: container.clientWidth,
+            marks: [
+                Plot.dot(parsedSensorData,
+                    { x: 'secs', y: value2muVolt, fy: 'label', fill: value2muVolt, r: 2 }
+                ),
+                Plot.ruleX([0]),
+                Plot.ruleX([seconds], { stroke: 'red' }),
+                Plot.line(parsedSensorData.filter(d => d.label === eventLabel && d.timeStamp === timestamp),
+                    { x: 'secs', y: value2muVolt, fy: 'label', stroke: 'black', strokeWidth: 3, tip: true })
+            ],
+        })
+        container.appendChild(plt)
+    }
+
+    // Append epochs box figure
+    {
+        let plt,
+            data = parsedSensorData.filter(d => d.secs === seconds),
+            selectedEpochData = data.filter(d => d.timeStamp === timestamp)
+            ;
+
+        plt = Plot.plot({
+            x: { nice: true, label: 'μV' },
+            y: { nice: true },
+            color: { scheme: 'dark2', legend: true },
+            width: container.clientWidth,
+            title: `Box view | Sensor ${selectedSensorName} | TimeStamp ${timestamp} | Seconds ${seconds}`,
+            marks: [
+                Plot.boxX(data,
+                    { x: value2muVolt, fy: 'label', fill: 'label', tip: true }
+                ),
+                Plot.dot(selectedEpochData,
+                    { x: value2muVolt, fy: 'label', stroke: 'red', r: 5, tip: true }
+                ),
+                Plot.text(selectedEpochData,
+                    { x: value2muVolt, fy: 'label', fill: 'red', text: value2muVolt, fontSize: 12, fontWeight: 'bold', dy: -12, tip: true }
+                )
+            ]
+        })
+
+        container.appendChild(plt)
+    }
 }
 
 let plotGeometryGraph = () => {
@@ -410,4 +560,8 @@ let betterMontageSensors = (sensors) => {
     }))
 
     return sensors
+}
+
+let value2muVolt = (d) => {
+    return d.v * 1e6
 }

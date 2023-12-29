@@ -393,8 +393,8 @@ async def get_eeg_epochs_events_csv(
         return resp
 
 
-@app.get("/zcc/getEEGSingleSensorAverageData.csv")
-async def get_eeg_single_sensor_average_data_csv(
+@app.get("/zcc/getEEGSingleSensorAveragedData.csv")
+async def get_eeg_single_sensor_averaged_data_csv(
     request: Request,
     sensorName: str,
     eventLabel: str,
