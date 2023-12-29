@@ -16,10 +16,12 @@ let colorMap = d3.schemeCategory10,
     sensorData,
     parsedSensorData,
     selectedSensorName,
+    selectedEventLabel,
 
     // Selectors
     eventLabelSelector,
     epochTimestampSelector,
+    epochDomainSelector,
 
     // Containers
     geometryGraphContainer,
@@ -175,6 +177,22 @@ let onLoadSingleSensorData = () => {
             })
             // ! Will be appended children by onSelectEventLabel(x)
         }
+
+        // Append domain selector
+        {
+            epochDomainSelector = controllerContainer.append('div').html(`
+<div class="px-4">
+    <label class="block text-sm font-bold leading-6 text-gray-900">
+        Signal domain (μV)
+    </label>
+    <select class="relative w-48 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"></select>
+</div>
+            `).select('select').on('change', (e) => {
+                plotSensorTimeCourse()
+            })
+
+            epochDomainSelector.selectAll('option').data([-1, 20, 50, 100, 200]).enter().append('option').attr('value', d => d).text(d => d)
+        }
     }
 
     sensorGraphicsContainer = container.append('div').html(`
@@ -186,29 +204,46 @@ let onLoadSingleSensorData = () => {
 }
 
 let onChangeEventLabelSelector = () => {
-    let eventLabel = parseInt(eventLabelSelector.node().value),
-        data = eventsData.filter(d => d.label === eventLabel)
-    console.log('On select event label:', eventLabel, ', Got data:', data)
+    selectedEventLabel = parseInt(eventLabelSelector.node().value)
+
+    let data = eventsData.filter(d => d.label === selectedEventLabel)
+    console.log('On select event label:', selectedEventLabel, ', Got data:', data)
 
     epochTimestampSelector.selectAll('option').data([]).exit().remove()
     epochTimestampSelector.selectAll('option').data(data).enter().append('option').attr('value', d => d.timeStamp).text(d => d.timeStamp)
     console.log('Updated epochSelector', epochTimestampSelector)
     plotSensorTimeCourse()
+    plotAveragedSensorTimeCourse()
+}
+
+let plotAveragedSensorTimeCourse = () => {
+    d3.csv(`/zcc/getEEGSingleSensorAverageData.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
+        console.log(csv)
+    }).catch(error => {
+        console.log(error)
+    })
 }
 
 let plotSensorTimeCourse = () => {
     let plt,
+        domain = undefined,
+        d = parseFloat(epochDomainSelector.node().value),
         container = sensorGraphicsContainer.node(),
         eventLabel = parseInt(eventLabelSelector.node().value),
         timestamp = parseInt(epochTimestampSelector.node().value);
 
+    if (d > 0) {
+        domain = [-d, d]
+    }
+
     plt = Plot.plot({
         x: { nice: true },
-        y: { nice: true, label: 'μV' },
+        y: { nice: true, label: 'μV', domain },
         color: { scheme: 'tableau10' },
         title: `Sensor ${selectedSensorName} | ${eventLabel}:${timestamp}`,
         width: container.clientWidth,
         marks: [
+            d > 0 ? Plot.frame() : undefined,
             Plot.line(parsedSensorData,
                 { x: 'secs', y: d => d.v * 1e6, fy: 'label', stroke: 'timeStamp', opacity: 0.4 }),
             Plot.ruleX([0]),

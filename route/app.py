@@ -67,6 +67,9 @@ def check_user_name(request: Request):
 
 # %%
 
+# %% ----------------------------------------------------------------
+# Routing functions
+
 
 @app.middleware("http")
 async def session_middleware(request: Request, call_next):

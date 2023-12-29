@@ -40,17 +40,127 @@ from fastapi.responses import (
 
 from util import LOGGER
 from util.experiments import Experiments
-from util.session_system import ZccSessionSystem
+from util.session_system import ZccSessionSystem, ZccSession
 from util.dataframe_converter import df2csv
+from util.doc import ZccErrorCode
 
 from route.app import app, check_user_name
 
 # %% ---- 2023-11-28 ------------------------
-# Function and class
+# Global variables
 experiments = Experiments()
 zss = ZccSessionSystem()
+zec = ZccErrorCode
 
 
+# %% ---- 2023-12-29 ------------------------
+# Tool functions
+def fetch_user_identity_and_session(request: Request):
+    """
+    Fetches the user identity and session based on the provided request.
+
+    Args:
+        request (Request): The request object.
+
+    Returns:
+        tuple: A tuple containing the username and session.
+
+    Example:
+        request = Request()
+        username, session = fetch_user_identity_and_session(request)
+        print(username, session)"""
+
+    username = check_user_name(request)
+    LOGGER.debug(f"Checked username: {username}")
+
+    if username is None:
+        LOGGER.warning("Failed check username.")
+        return None, None
+
+    session = zss.get_session(username)
+    LOGGER.debug(f"Current session: {session.subjectID} | {session.name} | {session}")
+
+    return username, session
+
+
+def handle_known_failure(fail_reason: str, _successFlag: zec, res: dict = None):
+    if res is None:
+        res = {}
+    LOGGER.warning(fail_reason)
+    res |= dict(_successFlag=_successFlag.value, _failReason=fail_reason)
+    return (
+        StreamingResponse(
+            iter(json.dumps(res)), media_type="text/json", status_code=404
+        ),
+        res,
+    )
+
+
+def get_attr_from_session(session: ZccSession, res: dict, attr_name: str):
+    """
+    Gets the raw from the given session.
+
+    Args:
+        session: The session object.
+        res (dict): The result dictionary.
+
+    Returns:
+        tuple: A tuple containing the raw and the updated result dictionary.
+
+    Raises:
+        StreamingResponse: If the data cannot be retrieved.
+
+    Example:
+        session = Session()
+        result = {}
+        epochs, result = get_epochs_from_session(session, result)
+        print(epochs, result)"""
+
+    eeg_data = session.eeg_data
+    if eeg_data is None:
+        return handle_known_failure(
+            f"Invalid eeg data | {session.name} | {session.subjectID}",
+            zec.SHOULD_NOT_NONE,
+            res,
+        )
+
+    if not hasattr(eeg_data, attr_name):
+        return handle_known_failure(
+            f"Invalid attr {attr_name} | {session.name} | {session.subjectID}",
+            zec.INVALID_ATTR,
+            res,
+        )
+
+    attr = getattr(eeg_data, attr_name)
+    if attr is None:
+        return handle_known_failure(
+            f"None value in attr {attr_name} | {session.name} | {session.subjectID}",
+            zec.SHOULD_NOT_NONE,
+            res,
+        )
+
+    return attr, res
+
+
+def mk_res(
+    session: ZccSession, experimentName: str, subjectID: str, others: dict = None
+) -> dict:
+    res = dict(
+        _sessionSubjectID=session.subjectID if session.subjectID is not None else "",
+        _sessionName=session.name,
+        _experimentName=experimentName,
+        _subjectID=subjectID,
+        _successFlag=0,
+    )
+
+    if others is not None and isinstance(others, dict):
+        res |= others
+
+    return res
+
+
+# %% ---- 2023-11-28 ------------------------
+# Function and class
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse(Path("asset/favicon.ico"))
@@ -58,27 +168,28 @@ async def favicon():
 
 @app.get("/zcc/getExperiments.csv")
 async def get_experiments_csv(request: Request):
-    username = check_user_name(request)
-    LOGGER.debug(f"Checked username: {username}")
-    df = experiments.to_df()
-    csv = df2csv(df)
-    return StreamingResponse(iter(csv), media_type="text/csv")
+    username, session = fetch_user_identity_and_session(request)
+
+    try:
+        df = experiments.to_df()
+        assert len(df) > 0, "No experiments found"
+        csv = df2csv(df)
+        return StreamingResponse(iter(csv), media_type="text/csv")
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING)
+        return resp
 
 
 @app.get("/zcc/getDataFiles.csv")
 async def get_data_files_csv(
     request: Request, response_class=StreamingResponse, experimentName: str = ""
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
     df = session.zfs.search_data()
-
     if experimentName:
         df = df.query(f'experiment=="{experimentName}"')
-
     csv = df2csv(df)
     return StreamingResponse(iter(csv), media_type="text/csv")
 
@@ -89,41 +200,35 @@ async def start_with_eeg_raw(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    params = dict(
-        sessionName=session.name, experimentName=experimentName, subjectID=subjectID
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    df = session.zfs.search_data()
-    df = df.query(f'subjectID=="{subjectID}"')
+    try:
+        df = session.zfs.search_data()
+        df = df.query(f'subjectID=="{subjectID}"')
+        assert len(df) > 0, "No experiments found"
 
-    # Not found any data
-    if len(df) == 0:
-        LOGGER.error(f"Not found subjectID: {subjectID}")
-        res = dict(params, fail="Not found subjectID")
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+        # Found multiple data
+        if len(df) > 1:
+            LOGGER.warning(f"Multiple subjectIDs: {df}")
 
-    # Found multiple data
-    if len(df) > 1:
-        LOGGER.warning(f"Multiple subjectIDs: {df}")
+        # Found one data, which is correct
+        selected = dict(df.iloc[0])
+        LOGGER.debug(f"Selected subjectID ({subjectID}): {selected}")
 
-    # Found one data, which is correct
-    selected = dict(df.iloc[0])
-    LOGGER.debug(f"Selected subjectID ({subjectID}): {selected}")
+        # Do something with the session
+        session.starts_with_raw(Path(selected["path"]), selected["subjectID"])
 
-    # Do something with the session
-    session.starts_with_raw(Path(selected["path"]), selected["subjectID"])
+        # Return the stuff
+        selected["path"] = Path(selected["path"]).as_posix()
+        res |= selected
+        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
 
-    # Return the stuff
-    selected["path"] = Path(selected["path"]).as_posix()
-    res = params | selected
-    return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGRawMontage.json")
@@ -132,38 +237,25 @@ async def get_eeg_montage_info(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+    montage, res = get_attr_from_session(session, res, attr_name="montage")
+    if res["_successFlag"] > 0:
+        return montage
 
-    montage = eeg_data.raw
-    if montage is None:
-        reason = f"Invalid montage in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(iter(json.dumps(res)), media_type="text/json")
+    try:
+        res |= dict(ch_names=montage.ch_names)
 
-    res |= dict(ch_names=montage.ch_names)
-
-    return StreamingResponse(
-        iter(json.dumps(res, default=lambda o: f"{o}")),
-        media_type="text/json",
-    )
+        return StreamingResponse(
+            iter(json.dumps(res, default=lambda o: f"{o}")),
+            media_type="text/json",
+        )
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGRawInfo.json")
@@ -172,46 +264,24 @@ async def get_eeg_raw_info(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
+    raw, res = get_attr_from_session(session, res, attr_name="raw")
+    if res["_successFlag"] > 0:
+        return raw
+
+    try:
+        res |= raw.info
+        return Response(
+            json.dumps(res, default=lambda o: f"{o}"),
+            media_type="text/json",
         )
-
-    raw = eeg_data.raw
-    if raw is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
-
-    res |= raw.info
-
-    # return StreamingResponse(
-    #     iter(json.dumps(res, default=lambda o: f"{o}")),
-    #     media_type="text/json",
-    # )
-    return Response(
-        json.dumps(res, default=lambda o: f"{o}"),
-        media_type="text/json",
-    )
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGRawData.csv")
@@ -222,65 +292,48 @@ async def get_eeg_raw_data_csv(
     seconds: float = 0,
     windowLength: float = 10,
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
+    res = mk_res(
+        session,
+        experimentName,
+        subjectID,
+        {"seconds": seconds, "windowLength": windowLength},
     )
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    raw, res = get_attr_from_session(session, res, attr_name="raw")
+    if res["_successFlag"] > 0:
+        return raw
 
-    raw = eeg_data.raw
-    if raw is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
-
-    events = eeg_data.events
-    if events is None:
-        reason = f"Invalid events in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=3, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    events, res = get_attr_from_session(session, res, attr_name="events")
+    if res["_successFlag"] > 0:
+        return events
 
     LOGGER.debug(
         f"Fetched data center at {seconds} seconds, window length is {windowLength}"
     )
 
-    # Data size is converted into (time points x channels)
-    data = raw.get_data().transpose()
-    data -= np.mean(data, axis=0)
+    try:
+        # Data size is converted into (time points x channels)
+        data = raw.get_data().transpose()
+        data -= np.mean(data, axis=0)
 
-    data_df = pd.DataFrame(data, columns=raw.info["ch_names"])
-    data_df["seconds"] = data_df.index / raw.info["sfreq"]
-    lower = seconds - windowLength / 2
-    upper = seconds + windowLength / 2
-    data_df = data_df.query(f"seconds < {upper}").query(f"seconds > {lower}")
+        data_df = pd.DataFrame(data, columns=raw.info["ch_names"])
+        data_df["seconds"] = data_df.index / raw.info["sfreq"]
+        lower = seconds - windowLength / 2
+        upper = seconds + windowLength / 2
+        data_df = data_df.query(f"seconds < {upper}").query(f"seconds > {lower}")
 
-    events_df = pd.DataFrame(events, columns=["samples", "duration", "label"])
-    events_df["seconds"] = events_df["samples"] / raw.info["sfreq"]
+        events_df = pd.DataFrame(events, columns=["samples", "duration", "label"])
+        events_df["seconds"] = events_df["samples"] / raw.info["sfreq"]
 
-    csv = df2csv(data_df)
-    # return StreamingResponse(iter(csv), media_type="text/csv")
-    return Response(csv, media_type="text/csv")
+        csv = df2csv(data_df)
+        return Response(csv, media_type="text/csv")
+
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGRawEvents.csv")
@@ -289,51 +342,29 @@ async def get_eeg_raw_events_csv(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    raw, res = get_attr_from_session(session, res, attr_name="raw")
+    if res["_successFlag"] > 0:
+        return raw
 
-    raw = eeg_data.raw
-    if raw is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    events, res = get_attr_from_session(session, res, attr_name="events")
+    if res["_successFlag"] > 0:
+        return events
 
-    events = eeg_data.events
-    if events is None:
-        reason = f"Invalid events in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=3, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    try:
+        df = pd.DataFrame(events, columns=["samples", "duration", "label"])
+        df["seconds"] = df["samples"] / raw.info["sfreq"]
 
-    df = pd.DataFrame(events, columns=["samples", "duration", "label"])
-    df["seconds"] = df["samples"] / raw.info["sfreq"]
+        csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
 
-    csv = df2csv(df)
-    # return StreamingResponse(iter(csv), media_type="text/csv")
-    return Response(csv, media_type="text/csv")
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGEpochsEvents.csv")
@@ -342,40 +373,58 @@ async def get_eeg_epochs_events_csv(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    epochs, res = get_attr_from_session(session, res, attr_name="epochs")
+    if res["_successFlag"] > 0:
+        return epochs
 
-    epochs = eeg_data.epochs
-    if epochs is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    try:
+        df = pd.DataFrame(epochs.events, columns=["timeStamp", "duration", "label"])
+        csv = df2csv(df)
 
-    df = pd.DataFrame(epochs.events, columns=["timeStamp", "duration", "label"])
-    csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
 
-    return Response(csv, media_type="text/csv")
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
+
+
+@app.get("/zcc/getEEGSingleSensorAverageData.csv")
+async def get_eeg_single_sensor_average_data_csv(
+    request: Request,
+    sensorName: str,
+    eventLabel: str,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username, session = fetch_user_identity_and_session(request)
+
+    res = mk_res(session, experimentName, subjectID)
+
+    epochs, res = get_attr_from_session(session, res, attr_name="epochs")
+    if res["_successFlag"] > 0:
+        return epochs
+
+    try:
+        epochs = epochs[eventLabel]
+        LOGGER.debug(f"Selected epochs: {epochs}")
+        evoked = epochs.average(picks=[sensorName])
+
+        # Data shape is (1 x times)
+        data = evoked.get_data()
+
+        df = pd.DataFrame(data)
+        csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
+
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGSingleSensorData.csv")
@@ -385,35 +434,13 @@ async def get_eeg_single_sensor_data_csv(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
-
-    epochs = eeg_data.epochs
-    if epochs is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    epochs, res = get_attr_from_session(session, res, attr_name="epochs")
+    if res["_successFlag"] > 0:
+        return epochs
 
     try:
         # Raw data shape is (events x 1 x times)
@@ -426,11 +453,10 @@ async def get_eeg_single_sensor_data_csv(
         csv = df2csv(df)
         return Response(csv, media_type="text/csv")
 
-    except Exception as err:
-        res |= dict(_successFlag=3, _failReason=traceback.format_exc())
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
 
 
 @app.get("/zcc/getEEGEvokedData.csv")
@@ -441,35 +467,13 @@ async def get_eeg_evoked_data_csv(
     subjectID: str = "",
     dataType: str = "timeCourse",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}")
+    username, session = fetch_user_identity_and_session(request)
 
-    res = dict(
-        _sessionName=session.name,
-        _experimentName=experimentName,
-        _subjectID=subjectID,
-        _successFlag=0,  # When it is larger than 0, there are something wrong.
-    )
+    res = mk_res(session, experimentName, subjectID)
 
-    eeg_data = session.eeg_data
-    if eeg_data is None:
-        reason = f"Invalid eeg data in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=1, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
-
-    epochs = eeg_data.epochs
-    if epochs is None:
-        reason = f"Invalid raw in session: {session}"
-        LOGGER.warning(reason)
-        res |= dict(_successFlag=2, _failReason=reason)
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    epochs, res = get_attr_from_session(session, res, attr_name="epochs")
+    if res["_successFlag"] > 0:
+        return epochs
 
     try:
         evoked = epochs[f"{event}"].average()
@@ -492,11 +496,16 @@ async def get_eeg_evoked_data_csv(
 
         return Response(csv, media_type="text/csv")
 
-    except Exception as err:
-        res |= dict(_successFlag=3, _failReason=traceback.format_exc())
-        return StreamingResponse(
-            iter(json.dumps(res)), media_type="text/json", status_code=404
-        )
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
+
+
+# %% ----------------------------------------------------------------
+"""
+The post requests which are designed submitting from button click with posting the HTML form.
+"""
 
 
 @app.post("/template/setup.html", response_class=RedirectResponse)
@@ -509,10 +518,7 @@ async def post_template_setup_html(
     experimentName: str = "",
     subjectID: str = "",
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+    username, session = fetch_user_identity_and_session(request)
 
     # Make sure the session is using the same EEG data
     if session.subjectID != subjectID:
@@ -538,10 +544,7 @@ async def post_template_setup_html(
 async def get_template_single_sensor_analysis_html(
     request: Request, experimentName: str = "", subjectID: str = ""
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+    username, session = fetch_user_identity_and_session(request)
 
     # Make sure the session is using the same EEG data
     if session.subjectID != subjectID:
@@ -572,10 +575,10 @@ async def post_template_analysis_html(
     filter: str = Form(),
     crop: str = Form(),
 ):
-    username = check_user_name(request)
-    session = zss.get_session(username)
-    LOGGER.debug(f"Checked username: {username}")
-    LOGGER.debug(f"Current session: {session}, {session.name}, {session.subjectID}")
+    """
+    It is the command which starts the epochs generation.
+    """
+    username, session = fetch_user_identity_and_session(request)
 
     # Make sure the session is using the same EEG data
     if session.subjectID != subjectID:
@@ -607,16 +610,15 @@ async def post_template_analysis_html(
         decim = setup["filter"]["downSampling"]
         session.collect_epochs(events, tmin, tmax, l_freq, h_freq, decim)
 
-    except Exception as err:
-        return Response(
-            json.dumps(dict(err=f"{err}", traceback=traceback.format_exc())),
-            status_code=status.HTTP_400_BAD_REQUEST,
+        return RedirectResponse(
+            url=f"/template/analysis.html?experimentName={experimentName}&subjectID={subjectID}",
+            status_code=status.HTTP_303_SEE_OTHER,
         )
 
-    return RedirectResponse(
-        url=f"/template/analysis.html?experimentName={experimentName}&subjectID={subjectID}",
-        status_code=status.HTTP_303_SEE_OTHER,
-    )
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING)
+        return resp
 
 
 # %% ---- 2023-11-28 ------------------------
