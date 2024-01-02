@@ -270,6 +270,14 @@ let onChangeEventLabelSelector = () => {
     console.log('Updated epochSelector', epochTimestampSelector)
     plotSensorTimeCourse()
     plotAveragedSensorTimeCourse()
+    plotAveragedSensorPsd()
+}
+
+let plotAveragedSensorPsd = () => {
+    console.log('--------------------')
+    d3.csv(`/zcc/getEEGSingleSensorAveragedPSD.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
+        console.log('Fetched averaged sensor psd:', csv)
+    })
 }
 
 let plotAveragedSensorTimeCourse = () => {

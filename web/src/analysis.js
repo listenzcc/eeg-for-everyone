@@ -22,6 +22,7 @@ let colorMap = d3.schemeCategory10,
     eventsData,
     montageSensors,
     evokedData,
+    evokedComplexData,
     evokedDataCorrelationMatrix,
     chNames,
 
@@ -138,7 +139,7 @@ let onLoadEventsAndSensors = () => {
     `).select('select').on('change', (e) => {
                 let d = dataTypeOptions.find(d => d.type === e.target.value)
                 Object.assign(dataType, d)
-                console.log(dataType, d, e.target.value, dataTypeOptions)
+                // console.log(dataType, d, e.target.value, dataTypeOptions)
                 onSelectEventLabel()
             })
 
@@ -512,6 +513,10 @@ let onSelectEventLabel = () => {
     onSelectEpochTimeStamp(data[0].timeStamp)
 
     d3.csv(`/zcc/getEEGEvokedData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&event=${eventLabel}&dataType=${dataType.type}`).then(csv => {
+        if (dataType.type === 'freqDomain') {
+            evokedComplexData = csvParseComplex(csv)
+            console.log('Fetched evoked complex data:', evokedComplexData)
+        }
         evokedData = csvParseFloat(csv)
         evokedData.map(d => d[dataType.axis] = parseFloat(d[dataType.axis].toFixed(2)))
         evokedData.eventLabel = eventLabel
@@ -635,6 +640,25 @@ let csvParseFloat = (csv) => {
     let max = -1e6,
         min = 1e6;
 
+    if (dataType.type === 'freqDomain') {
+        let re, im, split
+
+        csv.map(d => {
+            for (let c in d) {
+                if (c === "" || c === "_freq") { d[c] = parseFloat(d[c]); continue }
+                split = d[c].split(',')
+                re = parseFloat(split[0])
+                im = parseFloat(split[1])
+                d[c] = Math.sqrt(re * re + im * im)
+                max = d[c] > max ? d[c] : max
+                min = d[c] < min ? d[c] : min
+            }
+        })
+
+        Object.assign(csv, { max, min })
+        return csv
+    }
+
     csv.map(d => {
         for (let c in d) {
             d[c] = parseFloat(d[c])
@@ -646,6 +670,24 @@ let csvParseFloat = (csv) => {
     Object.assign(csv, { max, min })
 
     return csv
+}
+
+let csvParseComplex = (csv) => {
+    let re, im, split;
+    return csv.map(d => {
+        let row = {}
+        for (let c in d) {
+            if (c === "" || c === "_freq") {
+                row[c] = parseFloat(d[c]);
+                continue
+            }
+            split = d[c].split(',')
+            re = parseFloat(split[0])
+            im = parseFloat(split[1])
+            row[c] = { re, im }
+        }
+        return row
+    })
 }
 
 /**
@@ -692,6 +734,13 @@ let betterMontageSensors = (sensors) => {
 let computeEvokedDataCorrelation = () => {
     let s1,
         s2,
+        re1,
+        re2,
+        im1,
+        im2,
+        r1,
+        r2,
+        buffer,
         mean,
         std,
         nSubOne = evokedData.length - 1,
@@ -707,12 +756,22 @@ let computeEvokedDataCorrelation = () => {
 
     goodSensors.map(({ name: n1 }) => {
         goodSensors.map(({ name: n2 }) => {
-            s1 = normalize(evokedData.map(d => 1e6 * d[n1]))
-            s2 = normalize(evokedData.map(d => 1e6 * d[n2]))
+            if (dataType.type === 'freqDomain') {
+                re1 = evokedComplexData.map(d => d[n1].re)
+                im1 = evokedComplexData.map(d => d[n1].im)
+                r1 = evokedComplexData.map(d => Math.sqrt(Math.pow(d[n1].re, 2) + Math.pow(d[n1].im, 2)))
+                re2 = evokedComplexData.map(d => d[n2].re)
+                im2 = evokedComplexData.map(d => d[n2].im)
+                r2 = evokedComplexData.map(d => Math.sqrt(Math.pow(d[n2].re, 2) + Math.pow(d[n2].im, 2)))
+                buffer = re1.map((re1, i) => re1 * re2[i] - im1[i] * im2[i])
 
-            s1 = s1.map((v1, i) => Object.assign({}, { v1, v2: s2[i] }))
-
-            evokedDataCorrelationMatrix.push({ n1, n2, corr: d3.sum(s1, d => d.v1 * d.v2 / nSubOne) })
+                evokedDataCorrelationMatrix.push({ n1, n2, corr: d3.sum(buffer) / Math.sqrt(d3.variance(r1) * d3.variance(r2)) / nSubOne })
+            } else {
+                s1 = normalize(evokedData.map(d => 1e6 * d[n1]))
+                s2 = normalize(evokedData.map(d => 1e6 * d[n2]))
+                s1 = s1.map((v1, i) => Object.assign({}, { v1, v2: s2[i] }))
+                evokedDataCorrelationMatrix.push({ n1, n2, corr: d3.sum(s1, d => d.v1 * d.v2 / nSubOne) })
+            }
         })
     })
 

@@ -22,6 +22,7 @@ Functions:
 # %% ---- 2023-11-28 ------------------------
 # Requirements and constants
 import os
+import mne
 import json
 import traceback
 import numpy as np
@@ -393,6 +394,41 @@ async def get_eeg_epochs_events_csv(
         return resp
 
 
+@app.get("/zcc/getEEGSingleSensorAveragedPSD.csv")
+async def get_eeg_single_sensor_averaged_psd_csv(
+    request: Request,
+    sensorName: str,
+    eventLabel: str,
+    experimentName: str = "",
+    subjectID: str = "",
+):
+    username, session = fetch_user_identity_and_session(request)
+
+    res = mk_res(session, experimentName, subjectID)
+
+    epochs, res = get_attr_from_session(session, res, attr_name="epochs")
+    if res["_successFlag"] > 0:
+        return epochs
+
+    try:
+        epochs = epochs[eventLabel]
+        LOGGER.debug(f"Selected epochs: {epochs}")
+        evoked = epochs.average(picks=[sensorName])
+
+        spectrum = evoked.compute_psd()
+        df = spectrum.to_data_frame()
+
+        print(df)
+
+        csv = df2csv(df)
+        return Response(csv, media_type="text/csv")
+
+    except Exception:
+        fail_reason = traceback.format_exc()
+        resp, _ = handle_known_failure(fail_reason, zec.FAIL_PROCESSING, res)
+        return resp
+
+
 @app.get("/zcc/getEEGSingleSensorAveragedData.csv")
 async def get_eeg_single_sensor_averaged_data_csv(
     request: Request,
@@ -487,8 +523,14 @@ async def get_eeg_evoked_data_csv(
         elif dataType == "freqDomain":
             n = data.shape[0]
             fft = np.fft.fft(data, axis=0)
-            abs_fft = np.abs(fft) / n
-            df = pd.DataFrame(abs_fft, columns=epochs.ch_names)
+            # abs_fft = np.abs(fft) / n
+            # df = pd.DataFrame(abs_fft, columns=epochs.ch_names)
+
+            # Return the complex value of (re) + (im) x j
+            fft /= n
+            df = pd.DataFrame(fft, columns=epochs.ch_names)
+            df = df.applymap(lambda e: f"{np.real(e)},{np.imag(e)}")
+
             df["_freq"] = np.linspace(0, evoked.info["sfreq"], n)
             df = df.iloc[: int(n / 2)]
 
