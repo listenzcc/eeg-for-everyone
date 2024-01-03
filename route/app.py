@@ -52,7 +52,9 @@ templates = Jinja2Templates(directory="web/template")
 
 def check_user_name(request: Request):
     default = None
-    default = "No one from no where in no when"
+
+    # ! Return valid default value no matter what situation.
+    # default = "No one from no where in no when"
 
     cookies = request.cookies
     if token := cookies.get("access_token", None):

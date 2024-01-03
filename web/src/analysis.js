@@ -340,7 +340,7 @@ let redrawEvokedGraphics = () => {
             pltCell,
             cellData = [],
             container = evokedDataGraph.node(),
-            times = evokedData.map(d => dataType.typeName === 'timeCourse' ? d[dataType.axis] : parseInt(d[dataType.axis])),
+            times = evokedData.map(d => dataType.typeName === 'timeCourse' ? d[dataType.axis] : d[dataType.axis]),
             checks = sensorNamesSelector.selectAll('label').select('label').select('input').nodes().map(d => d.checked),
             displayChNames = chNames.filter((d, i) => checks[i])
 
