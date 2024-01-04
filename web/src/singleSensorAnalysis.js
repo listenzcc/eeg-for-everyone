@@ -310,7 +310,7 @@ let onLoadTfrMorlet = () => {
         marks: [
             Plot.cell(trfMorletData, { x: 'secs', y: 'freq', fill: d => d.v * 1e6, tip: true }),
             Plot.ruleX([seconds]),
-            Plot.ruleX([0], { stroke: '#FEDFE1' }),
+            Plot.ruleX([0], { stroke: 'red' }),
         ]
     })
 
