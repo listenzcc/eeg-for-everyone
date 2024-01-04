@@ -54,7 +54,7 @@ def check_user_name(request: Request):
     default = None
 
     # ! Return valid default value no matter what situation.
-    # default = "No one from no where in no when"
+    default = "No one from no where in no when"
 
     cookies = request.cookies
     if token := cookies.get("access_token", None):

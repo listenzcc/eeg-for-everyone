@@ -71,11 +71,18 @@ d3.json(`/zcc/startWithEEGRaw.json?experimentName=${_experimentName}&subjectID=$
 
 
 
-let drawEEGRawData = (seconds = 100, windowLength = 3) => {
+let drawEEGRawData = (seconds = 0, windowLength = 3) => {
     if (document.getElementById('zcc-SelectedEEGSeconds')) {
         seconds = document.getElementById('zcc-SelectedEEGSeconds').value;
     }
 
+    // Dim out the current graph
+    {
+        let svg = d3.select(_zccEEGDataContainer).select('svg').node()
+        if (svg) {
+            svg.style.filter = 'opacity(0.1)'
+        }
+    }
     d3.csv(
         `/zcc/getEEGRawData.csv?experimentName=${_experimentName}&subjectID=${_subjectID}&seconds=${seconds}&windowLength=${windowLength}`
     ).then((dataCsv) => {
@@ -127,7 +134,11 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
                     .enter()
                     .append("option")
                     .attr("value", (d) => d.seconds)
-                    .text((d) => d.label + ": " + d.seconds)
+                    .text((d) => {
+                        let s = d.label.padEnd(8) + " | " + d.seconds.toFixed(2)
+                        console.log(s)
+                        return s
+                    })
 
                 select
                     .on('input', e => {
@@ -139,6 +150,7 @@ let drawEEGRawData = (seconds = 100, windowLength = 3) => {
                         plotEvents(seconds)
                         console.log('Position to seconds:', seconds)
                     })
+
             }
         }
 
@@ -186,8 +198,7 @@ let plotEEGData = (chNamesFull, highlightChannel) => {
     }
 
     plt = Plot.plot({
-        title: chNames,
-        y: { nice: true },
+        y: { nice: true, label: 'µV' },
         height: container.clientWidth * 0.5,
         width: container.clientWidth,
         grid: true,
@@ -195,8 +206,9 @@ let plotEEGData = (chNamesFull, highlightChannel) => {
         marks: marks1.concat(marks2),
     });
 
-    container.innerHTML = "<div></div>";
-    container.replaceChild(plt, container.firstChild);
+    container.innerHTML = `<div style="overflow-wrap: break-word">${chNames}</div>`;
+    // container.replaceChild(plt, container.firstChild);
+    container.appendChild(plt)
 };
 
 let drawEvents = () => {
@@ -206,11 +218,12 @@ let drawEvents = () => {
         eventsCsv.map((d) =>
             Object.assign(d, {
                 seconds: parseFloat(d.seconds),
-                samples: parseInt(d.samples),
-                label: ("00" + d.label).slice(-3),
+                timestamp: parseInt(d.timestamp),
+                label: "L:" + d.label
             })
         );
         events = eventsCsv
+        console.log('Fetched events:', events)
         plotEvents();
         everythingIsFine.events = true
         checkEverythingIsFine()
@@ -225,6 +238,7 @@ let plotEvents = (targetSeconds) => {
     plt = Plot.plot({
         x: { nice: true, domain: d3.extent(eventsCsv, d => d.seconds) },
         y: { nice: true },
+        marginLeft: 80,
         height: container.clientWidth * 0.3,
         width: container.clientWidth,
         grid: true,
@@ -235,13 +249,13 @@ let plotEvents = (targetSeconds) => {
                 x: "seconds",
                 fy: "label",
                 r: 7,
-                fill: (d) => parseInt(d.label),
+                fill: 'label',
                 tip: true,
             }),
             Plot.text(eventsCsv, {
                 x: "seconds",
                 fy: "label",
-                text: (d) => parseInt(d.label),
+                text: 'label'
             }),
             Plot.ruleX([targetSeconds || 0])
         ],

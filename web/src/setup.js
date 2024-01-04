@@ -192,8 +192,8 @@ let eventsSetup = () => {
         eventsCsv.map((d) =>
             Object.assign(d, {
                 seconds: parseFloat(d.seconds),
-                samples: parseInt(d.samples),
-                label: ("00" + d.label).slice(-3),
+                timestamp: parseInt(d.timestamp),
+                label: d.label,
             })
         );
         fullRecord = eventsCsv
@@ -217,7 +217,7 @@ let eventsSetup = () => {
                     // Hide the setting div
                     container.attr('style', 'display: none')
                     // Update the slogan
-                    span.text('Events selected: ' + value.map(d => parseInt(d.label)).join(', '))
+                    span.text('Events selected: ' + value.map(d => d.label).join(', '))
                 } else {
                     console.error('Invalid input:', value)
                 }
@@ -238,9 +238,10 @@ let eventsSetup = () => {
     let createEventToggles = () => {
         let toggles = {};
 
+        console.log(fullRecord)
         fullRecord.map(({ label }) => {
-            let { count, active, num } = toggles[label] || { count: 0, active: true, num: parseInt(label) }
-            toggles[label] = { count: count + 1, active, num }
+            let { count, active } = toggles[label] || { count: 0, active: true }
+            toggles[label] = { count: count + 1, active }
         })
 
         eventToggles = []
@@ -257,8 +258,8 @@ let eventsSetup = () => {
         togglesContainer.innerHTML = ''
         d3.select(togglesContainer).append('div').attr('class', 'grid space-y-2').selectAll('label').data(eventToggles).enter().append('label').html(d => `
 <label class="max-w-xs flex justify-between p-3 w-full bg-white border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400">
-<div>
-<span class="text-sm text-gray-500 ms-3 dark:text-gray-400">${d.label}</span>
+<div class="flex">
+<span class="text-sm font-bold text-gray-500 ms-3 dark:text-gray-400 w-24">${d.label}</span>
 <span class="text-sm text-gray-500 ms-3 dark:text-gray-400">${d.count}</span>
 </div>
 <input checked=true type="checkbox" class="zcc-allEventToggles shrink-0 mt-0.5 border-gray-200 rounded text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
@@ -300,17 +301,19 @@ let eventsSetup = () => {
             y: { nice: true },
             grid: true,
             height: 400,
+            marginLeft: 80,
             marks: [
                 Plot.dot(events, {
                     x: 'seconds',
                     fy: 'label',
                     r: 8,
-                    fill: d => eventToggles.find(e => e.label === d.label).color
+                    fill: 'label',
+                    tip: true
                 }),
                 Plot.text(events, {
                     x: 'seconds',
                     fy: 'label',
-                    text: d => parseInt(d.label),
+                    text: d => '•', //'label',
                     fill: 'white'
                 })
             ]

@@ -95,7 +95,7 @@ class ZccSession(object):
         LOGGER.debug(f"Session {self.name} started with new subjectID {self.subjectID}")
         return self.eeg_data
 
-    def collect_epochs(self, events, tmin, tmax, l_freq, h_freq, decim):
+    def collect_epochs(self, events, event_id, tmin, tmax, l_freq, h_freq, decim):
         """
         Collects epochs based on the provided events and parameters asynchronously.
 
@@ -118,7 +118,7 @@ class ZccSession(object):
             timestamp = time.time()
             self.eeg_data.timestamp = timestamp
             epochs = self.eeg_data.collect_epochs(
-                events, tmin, tmax, l_freq, h_freq, decim, timestamp
+                events, event_id, tmin, tmax, l_freq, h_freq, decim, timestamp
             )
 
             LOGGER.debug(

@@ -44,7 +44,7 @@ let colorMap = d3.schemeCategory10,
 let startsWithEpochsEventsCsv = () => {
     // Fetch epochs events
     d3.csv(`/zcc/getEEGEpochsEvents.csv?experimentName=${_experimentName}&subjectID=${_subjectID}`).then((data) => {
-        eventsData = csvParseInt(data);
+        eventsData = csvParseInt(data, ['timestamp', 'duration']);
         console.log('Fetched eventsData', eventsData)
 
         // Fetch montage sensor
@@ -502,7 +502,7 @@ let redrawEvokedGraphics = () => {
  * onSelectEventLabel(5);
  */
 let onSelectEventLabel = () => {
-    let eventLabel = parseInt(eventLabelSelector.node().value),
+    let eventLabel = eventLabelSelector.node().value,
         data = eventsData.filter(d => d.label === eventLabel)
     console.log('On select event label:', eventLabel, ', Got data:', data)
 
@@ -616,10 +616,12 @@ let xyz2polar = (obj) => {
  * const parsedData = csvParseInt(csvData);
  * console.log(parsedData); // [{ a: 1, b: 2 }, { a: 3, b: 4 }]
  */
-let csvParseInt = (csv) => {
+let csvParseInt = (csv, columns = []) => {
     csv.map(d => {
         for (let c in d) {
-            d[c] = parseInt(d[c])
+            if (columns.length > 0 && columns.includes(c)) {
+                d[c] = parseInt(d[c])
+            }
         }
     })
     return csv

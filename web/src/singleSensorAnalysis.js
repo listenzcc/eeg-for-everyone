@@ -11,6 +11,7 @@ let colorMap = d3.schemeCategory10,
     chNames,
     eventsData,
     timesData,
+    trfMorletData,
     montageSensors,
 
     // Single sensor data
@@ -43,7 +44,7 @@ let colorMap = d3.schemeCategory10,
 let firstThingFirst = () => {
     // Fetch epochs events
     d3.csv(`/zcc/getEEGEpochsEvents.csv?experimentName=${_experimentName}&subjectID=${_subjectID}`).then((data) => {
-        eventsData = csvParseInt(data);
+        eventsData = csvParseInt(data, ['timeStamp', 'duration']);
         console.log('Fetched eventsData', eventsData)
 
         // Fetch montage sensor
@@ -176,7 +177,7 @@ let onLoadSingleSensorData = () => {
                 onChangeEventLabelSelector()
             })
 
-            eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d)
+            eventLabelSelector.selectAll('option').data(events).enter().append('option').attr('value', d => d).text(d => d + " | " + eventsData.filter(e => e.label === d).length)
         }
 
         // Append time stamp selector
@@ -190,7 +191,7 @@ let onLoadSingleSensorData = () => {
 </div>
     `).select('select').on('change', (e) => {
                 plotSensorTimeCourse()
-                plotAveragedSensorTimeCourse()
+                // plotAveragedSensorTimeCourse()
             })
             // ! Will be appended children by onSelectEventLabel(x)
         }
@@ -260,7 +261,7 @@ let onLoadSingleSensorData = () => {
 }
 
 let onChangeEventLabelSelector = () => {
-    selectedEventLabel = parseInt(eventLabelSelector.node().value)
+    selectedEventLabel = eventLabelSelector.node().value
 
     let data = eventsData.filter(d => d.label === selectedEventLabel)
     console.log('On select event label:', selectedEventLabel, ', Got data:', data)
@@ -270,14 +271,50 @@ let onChangeEventLabelSelector = () => {
     console.log('Updated epochSelector', epochTimestampSelector)
     plotSensorTimeCourse()
     plotAveragedSensorTimeCourse()
-    plotAveragedSensorPsd()
+    plotAveragedSensorTfrMorlet()
 }
 
-let plotAveragedSensorPsd = () => {
+let plotAveragedSensorTfrMorlet = () => {
     console.log('--------------------')
-    d3.csv(`/zcc/getEEGSingleSensorAveragedPSD.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
-        console.log('Fetched averaged sensor psd:', csv)
+    d3.csv(`/zcc/getEEGSingleSensorAveragedTfrMorlet.csv/?experimentName=${_experimentName}&subjectID=${_subjectID}&sensorName=${selectedSensorName}&eventLabel=${selectedEventLabel}`).then(csv => {
+        trfMorletData = csvParseFloat(csv)
+        console.log('Fetched averaged sensor tfr morlet:', trfMorletData)
+        onLoadTfrMorlet()
     })
+}
+
+let onLoadTfrMorlet = () => {
+    let plt,
+        seconds = parseFloat(secsSelector.node().value),
+        times = [... new Set(trfMorletData.map(d => d.secs))],
+        domain = undefined,
+
+        container = document.getElementById('zcc-averagedTfrMorletContainer');
+    container.innerHTML = ''
+
+    {
+        let d = parseFloat(epochDomainSelector.node().value);
+
+        if (d > 0) {
+            domain = [-d, d]
+        }
+    }
+
+    plt = Plot.plot({
+        title: `Morlet time-frequency energy graph | Sensor ${selectedSensorName} | Event label ${selectedEventLabel}`,
+        x: { nice: true, domain: times },
+        y: { nice: true, reverse: true },
+        width: container.clientWidth,
+        marginLeft: 80,
+        color: { scheme: 'RdBu', reverse: true, domain, legend: true, label: 'Power' },
+        marks: [
+            Plot.cell(trfMorletData, { x: 'secs', y: 'freq', fill: d => d.v * 1e6, tip: true }),
+            Plot.ruleX([seconds]),
+            Plot.ruleX([0], { stroke: '#FEDFE1' }),
+        ]
+    })
+
+    container.appendChild(plt)
 }
 
 let plotAveragedSensorTimeCourse = () => {
@@ -304,6 +341,7 @@ let plotAveragedSensorTimeCourse = () => {
                 y: { nice: true, label: 'μV' },
                 color: { legend: true, scheme: 'RdBu' },
                 grid: true,
+                marginLeft: 80,
                 title: `Averaged time course | Sensor ${selectedSensorName} | Event label ${selectedEventLabel}`,
                 width: container.clientWidth,
                 marks: [
@@ -327,16 +365,16 @@ let plotAveragedSensorTimeCourse = () => {
 
 let plotSensorTimeCourse = () => {
     let container = epochsTimeCourseContainer.node(),
-        eventLabel = parseInt(eventLabelSelector.node().value),
+        eventLabel = eventLabelSelector.node().value,
         timestamp = parseInt(epochTimestampSelector.node().value),
-        seconds = parseFloat(secsSelector.node().value);
+        seconds = parseFloat(secsSelector.node().value),
+        domain = undefined
 
     container.innerHTML = ''
 
     // Append epochs time course figure
     {
         let plt,
-            domain = undefined,
             d = parseFloat(epochDomainSelector.node().value);
 
         if (d > 0) {
@@ -352,7 +390,7 @@ let plotSensorTimeCourse = () => {
             marks: [
                 d > 0 ? Plot.frame() : undefined,
                 Plot.line(parsedSensorData,
-                    { x: 'secs', y: value2muVolt, fy: 'label', stroke: 'timeStamp', opacity: 0.4 }),
+                    { x: 'secs', y: value2muVolt, fy: d => d.label === eventLabel ? eventLabel : 'Others', stroke: 'timeStamp', opacity: 0.4, tip: true }),
                 Plot.ruleX([0]),
                 Plot.ruleX([seconds], { stroke: 'red' }),
                 Plot.line(parsedSensorData.filter(d => d.label === eventLabel && d.timeStamp === timestamp),
@@ -366,19 +404,20 @@ let plotSensorTimeCourse = () => {
         let plt;
 
         plt = Plot.plot({
-            x: { nice: true },
-            y: { nice: true, label: 'μV' },
-            color: { scheme: 'RdBu' },
+            x: { nice: true, domain: d3.extent(parsedSensorData.map(d => d.secs)) },
+            y: { nice: true, label: 'μV', type: 'point' },
+            marginLeft: 80,
+            color: { scheme: 'RdBu', reverse: true, legend: true, domain },
             title: `Time course (2) | Sensor ${selectedSensorName} | EventLabel ${eventLabel} | TimeStamp ${timestamp}`,
             width: container.clientWidth,
+            height: container.clientWidth / 2,
             marks: [
-                Plot.dot(parsedSensorData,
-                    { x: 'secs', y: value2muVolt, fy: 'label', fill: value2muVolt, r: 2 }
+                Plot.dotX(parsedSensorData.filter(d => d.label === eventLabel),
+                    { x: 'secs', y: d => '' + d.timeStamp, fill: value2muVolt, tip: true, symbol: 'square', r: 2 }
                 ),
                 Plot.ruleX([0]),
                 Plot.ruleX([seconds], { stroke: 'red' }),
-                Plot.line(parsedSensorData.filter(d => d.label === eventLabel && d.timeStamp === timestamp),
-                    { x: 'secs', y: value2muVolt, fy: 'label', stroke: 'black', strokeWidth: 3, tip: true })
+                Plot.ruleY([parsedSensorData.find(d => d.label === eventLabel && d.timeStamp === timestamp).timeStamp], { opacity: 0.2 })
             ],
         })
         container.appendChild(plt)
@@ -394,7 +433,7 @@ let plotSensorTimeCourse = () => {
         plt = Plot.plot({
             x: { nice: true, label: 'μV' },
             y: { nice: true },
-            color: { scheme: 'dark2', legend: true },
+            color: { scheme: 'dark2', legend: true, type: 'ordinal' },
             width: container.clientWidth,
             title: `Box view | Sensor ${selectedSensorName} | TimeStamp ${timestamp} | Seconds ${seconds}`,
             marks: [
@@ -500,10 +539,12 @@ let xyz2polar = (obj) => {
  * const parsedData = csvParseInt(csvData);
  * console.log(parsedData); // [{ a: 1, b: 2 }, { a: 3, b: 4 }]
  */
-let csvParseInt = (csv) => {
+let csvParseInt = (csv, columns = []) => {
     csv.map(d => {
         for (let c in d) {
-            d[c] = parseInt(d[c])
+            if (columns.length > 0 && columns.includes(c)) {
+                d[c] = parseInt(d[c])
+            }
         }
     })
     return csv

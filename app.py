@@ -99,23 +99,24 @@ def handle_known_failure(fail_reason: str, _successFlag: zec, res: dict = None):
 
 def get_attr_from_session(session: ZccSession, res: dict, attr_name: str):
     """
-    Gets the raw from the given session.
+    Retrieves an attribute from a ZccSession's EEG data.
 
     Args:
-        session: The session object.
-        res (dict): The result dictionary.
+        session: The ZccSession object.
+        res: A dictionary to store the result.
+        attr_name: The name of the attribute to retrieve.
 
     Returns:
-        tuple: A tuple containing the raw and the updated result dictionary.
+        A tuple containing the attribute value and the updated result dictionary.
 
     Raises:
-        StreamingResponse: If the data cannot be retrieved.
+        KnownFailureError: If the EEG data is invalid or the attribute is not found or has a None value.
 
-    Example:
-        session = Session()
-        result = {}
-        epochs, result = get_epochs_from_session(session, result)
-        print(epochs, result)"""
+    Examples:
+        >>> session = ZccSession(...)
+        >>> res = {}
+        >>> attr, res = get_attr_from_session(session, res, 'attr_name')
+    """
 
     eeg_data = session.eeg_data
     if eeg_data is None:
@@ -355,9 +356,16 @@ async def get_eeg_raw_events_csv(
     if res["_successFlag"] > 0:
         return events
 
+    event_id, res = get_attr_from_session(session, res, attr_name="event_id")
+    if res["_successFlag"] > 0:
+        return event_id
+
     try:
-        df = pd.DataFrame(events, columns=["samples", "duration", "label"])
-        df["seconds"] = df["samples"] / raw.info["sfreq"]
+        inv_event_id = {v: k for k, v in event_id.items()}
+        df = pd.DataFrame(events, columns=["timestamp", "duration", "label"])
+        # Convert number label into its string label
+        df["label"] = df["label"].map(lambda num: inv_event_id[num])
+        df["seconds"] = df["timestamp"] / raw.info["sfreq"]
 
         csv = df2csv(df)
         return Response(csv, media_type="text/csv")
@@ -384,6 +392,9 @@ async def get_eeg_epochs_events_csv(
 
     try:
         df = pd.DataFrame(epochs.events, columns=["timeStamp", "duration", "label"])
+        inv_event_id = {v: k for k, v in epochs.event_id.items()}
+        # Convert number label into its string label
+        df["label"] = df["label"].map(lambda num: inv_event_id[num])
         csv = df2csv(df)
 
         return Response(csv, media_type="text/csv")
@@ -394,8 +405,8 @@ async def get_eeg_epochs_events_csv(
         return resp
 
 
-@app.get("/zcc/getEEGSingleSensorAveragedPSD.csv")
-async def get_eeg_single_sensor_averaged_psd_csv(
+@app.get("/zcc/getEEGSingleSensorAveragedTfrMorlet.csv")
+async def get_eeg_single_sensor_averaged_tfr_morlet_csv(
     request: Request,
     sensorName: str,
     eventLabel: str,
@@ -411,12 +422,17 @@ async def get_eeg_single_sensor_averaged_psd_csv(
         return epochs
 
     try:
-        epochs = epochs[eventLabel]
-        LOGGER.debug(f"Selected epochs: {epochs}")
-        evoked = epochs.average(picks=[sensorName])
+        tfr_epochs, averaged_data, freqs, times = session.eeg_data.compute_tfr_morlet(
+            sensorName, eventLabel
+        )
 
-        spectrum = evoked.compute_psd()
-        df = spectrum.to_data_frame()
+        buffer = []
+        for i, freq in enumerate(freqs):
+            buffer.extend(
+                dict(freq=freq, secs=secs, v=averaged_data[i][j])
+                for j, secs in enumerate(times)
+            )
+        df = pd.DataFrame(buffer)
 
         print(df)
 
@@ -583,7 +599,7 @@ async def post_template_setup_html(
 
 
 @app.post("/template/singleSensorAnalysis.html", response_class=RedirectResponse)
-async def get_template_single_sensor_analysis_html(
+async def post_template_single_sensor_analysis_html(
     request: Request, experimentName: str = "", subjectID: str = ""
 ):
     username, session = fetch_user_identity_and_session(request)
@@ -620,6 +636,14 @@ async def post_template_analysis_html(
     """
     It is the command which starts the epochs generation.
     """
+
+    setup = dict(
+        events=json.loads(events)["value"],
+        filter=json.loads(filter)["value"],
+        crop=json.loads(crop)["value"],
+    )
+    LOGGER.debug(f"Received setup: {setup}")
+
     username, session = fetch_user_identity_and_session(request)
 
     # Make sure the session is using the same EEG data
@@ -636,21 +660,20 @@ async def post_template_analysis_html(
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    setup = dict(
-        events=json.loads(events)["value"],
-        filter=json.loads(filter)["value"],
-        crop=json.loads(crop)["value"],
-    )
-    LOGGER.debug(f"Received setup: {setup}")
+    res = mk_res(session, experimentName, subjectID)
+
+    event_id, res = get_attr_from_session(session, res, attr_name="event_id")
+    if res["_successFlag"] > 0:
+        return event_id
 
     try:
-        events = [e["num"] for e in setup["events"]]
+        events = [event_id[e["label"]] for e in setup["events"]]
         tmin = setup["crop"]["tMin"]
         tmax = setup["crop"]["tMax"]
         l_freq = setup["filter"]["lFreq"]
         h_freq = setup["filter"]["hFreq"]
         decim = setup["filter"]["downSampling"]
-        session.collect_epochs(events, tmin, tmax, l_freq, h_freq, decim)
+        session.collect_epochs(events, event_id, tmin, tmax, l_freq, h_freq, decim)
 
         return RedirectResponse(
             url=f"/template/analysis.html?experimentName={experimentName}&subjectID={subjectID}",
