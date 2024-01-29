@@ -306,9 +306,9 @@ let onLoadTfrMorlet = () => {
         y: { nice: true, reverse: true },
         width: container.clientWidth,
         marginLeft: 80,
-        color: { scheme: 'RdBu', reverse: true, domain, legend: true, label: 'Power' },
+        color: { scheme: 'RdBu', reverse: true, legend: true, label: 'Power', domain: [-15, 15] },
         marks: [
-            Plot.cell(trfMorletData, { x: 'secs', y: 'freq', fill: d => d.v * 1e6, tip: true }),
+            Plot.cell(trfMorletData, { x: 'secs', y: 'freq', fill: d => d.v * 1e12, tip: true }),
             Plot.ruleX([seconds]),
             Plot.ruleX([0], { stroke: 'red' }),
         ]
